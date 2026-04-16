@@ -1,5 +1,12 @@
+import "dotenv/config";
 import pg from 'pg';
 const { Pool } = pg;
+
+if (!process.env.DATABASE_URL) {
+  console.error("❌ DATABASE_URL is NOT detected. Please check your .env file in the root directory.");
+} else {
+  console.log("✅ Database URL detected.");
+}
 
 // Use environment variable for connection string
 const pool = new Pool({
