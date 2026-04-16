@@ -7,7 +7,7 @@ import { SEO } from '@/src/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChevronRight, Zap, Star, Clock, Smartphone } from 'lucide-react';
-import { Mobile, BlogPost } from '@/src/types';
+import { Mobile, BlogPost, Brand, PriceRange } from '@/src/types';
 import { BRANDS } from '@/src/constants';
 
 // Mock Data
@@ -155,15 +155,24 @@ const MOCK_POSTS: BlogPost[] = [
 
 export function Home() {
   const [phones, setPhones] = useState<Mobile[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [priceRanges, setPriceRanges] = useState<PriceRange[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/mobiles')
-      .then(res => res.json())
-      .then(data => {
-        if (data && Array.isArray(data)) {
-          setPhones(data);
-        }
+    Promise.all([
+      fetch('/api/mobiles'),
+      fetch('/api/brands'),
+      fetch('/api/price-ranges')
+    ])
+      .then(async ([mobRes, brandRes, priceRes]) => {
+        const mobData = await mobRes.json();
+        const brandData = await brandRes.json();
+        const priceData = await priceRes.json();
+        
+        if (Array.isArray(mobData)) setPhones(mobData);
+        if (Array.isArray(brandData)) setBrands(brandData);
+        if (Array.isArray(priceData)) setPriceRanges(priceData);
       })
       .catch(err => console.error(err))
       .finally(() => setIsLoading(false));
@@ -395,7 +404,12 @@ export function Home() {
                 Search by Brand
               </div>
               <div className="p-2 grid grid-cols-1 gap-0.5">
-                {BRANDS.map(brand => (
+                {brands.length > 0 ? brands.map(brand => (
+                  <a key={brand.id} href={`/brand/${brand.slug}`} className="px-3 py-1.5 text-[11px] font-medium hover:bg-muted transition-colors border-b last:border-0 border-muted/50 flex justify-between items-center group">
+                    <span>{brand.name} Mobile</span>
+                    <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </a>
+                )) : BRANDS.map(brand => (
                   <a key={brand} href={`/brand/${brand.toLowerCase()}`} className="px-3 py-1.5 text-[11px] font-medium hover:bg-muted transition-colors border-b last:border-0 border-muted/50 flex justify-between items-center group">
                     <span>{brand} Mobile</span>
                     <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -410,12 +424,20 @@ export function Home() {
                 Search by Price
               </div>
               <div className="p-2 grid grid-cols-1 gap-0.5 text-[11px] font-medium">
-                <a href="#" className="px-3 py-1.5 hover:bg-muted border-b border-muted/50">Prices {'>'} $1000</a>
-                <a href="#" className="px-3 py-1.5 hover:bg-muted border-b border-muted/50">$800 - $1000</a>
-                <a href="#" className="px-3 py-1.5 hover:bg-muted border-b border-muted/50">$600 - $800</a>
-                <a href="#" className="px-3 py-1.5 hover:bg-muted border-b border-muted/50">$400 - $600</a>
-                <a href="#" className="px-3 py-1.5 hover:bg-muted border-b border-muted/50">$200 - $400</a>
-                <a href="#" className="px-3 py-1.5 hover:bg-muted">$100 - $200</a>
+                {priceRanges.length > 0 ? priceRanges.map(range => (
+                  <a key={range.id} href={`/price-range?min=${range.minPrice}&max=${range.maxPrice}&label=${encodeURIComponent(range.label)}`} className="px-3 py-1.5 hover:bg-muted border-b border-muted/50 block">
+                    {range.label}
+                  </a>
+                )) : (
+                  <>
+                    <a href="#" className="px-3 py-1.5 hover:bg-muted border-b border-muted/50">Prices {'>'} $1000</a>
+                    <a href="#" className="px-3 py-1.5 hover:bg-muted border-b border-muted/50">$800 - $1000</a>
+                    <a href="#" className="px-3 py-1.5 hover:bg-muted border-b border-muted/50">$600 - $800</a>
+                    <a href="#" className="px-3 py-1.5 hover:bg-muted border-b border-muted/50">$400 - $600</a>
+                    <a href="#" className="px-3 py-1.5 hover:bg-muted border-b border-muted/50">$200 - $400</a>
+                    <a href="#" className="px-3 py-1.5 hover:bg-muted">$100 - $200</a>
+                  </>
+                )}
               </div>
             </section>
           </div>

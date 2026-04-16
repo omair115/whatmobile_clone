@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Zap, RefreshCw, CheckCircle2, AlertCircle, Plus, Edit2, Trash2, LogOut, Smartphone, FileText, Settings } from 'lucide-react';
-import { Mobile, BlogPost } from '@/src/types';
+import { Mobile, BlogPost, Brand, PriceRange } from '@/src/types';
 
 export function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -17,12 +17,16 @@ export function Admin() {
 
   const [mobiles, setMobiles] = useState<Mobile[]>([]);
   const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [priceRanges, setPriceRanges] = useState<PriceRange[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
 
   const [editingMobile, setEditingMobile] = useState<Partial<Mobile> | null>(null);
   const [editingPost, setEditingPost] = useState<Partial<BlogPost> | null>(null);
+  const [editingBrand, setEditingBrand] = useState<Partial<Brand> | null>(null);
+  const [editingPriceRange, setEditingPriceRange] = useState<Partial<PriceRange> | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
@@ -34,14 +38,20 @@ export function Admin() {
 
   const fetchData = async () => {
     try {
-      const [mobRes, postRes] = await Promise.all([
+      const [mobRes, postRes, brandRes, priceRes] = await Promise.all([
         fetch('/api/mobiles'),
-        fetch('/api/posts')
+        fetch('/api/posts'),
+        fetch('/api/brands'),
+        fetch('/api/price-ranges')
       ]);
       const mobData = await mobRes.json();
       const postData = await postRes.json();
+      const brandData = await brandRes.json();
+      const priceData = await priceRes.json();
       if (Array.isArray(mobData)) setMobiles(mobData);
       if (Array.isArray(postData)) setPosts(postData);
+      if (Array.isArray(brandData)) setBrands(brandData);
+      if (Array.isArray(priceData)) setPriceRanges(priceData);
     } catch (err) {
       console.error("Error fetching data:", err);
     }
@@ -165,6 +175,68 @@ export function Admin() {
     }
   };
 
+  const handleSaveBrand = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingBrand) return;
+    const isNew = !editingBrand.id;
+    const url = isNew ? '/api/brands' : `/api/brands/${editingBrand.id}`;
+    const method = isNew ? 'POST' : 'PUT';
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingBrand)
+      });
+      if (res.ok) {
+        setEditingBrand(null);
+        fetchData();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteBrand = async (id: string) => {
+    if (!confirm("Delete this brand?")) return;
+    try {
+      await fetch(`/api/brands/${id}`, { method: 'DELETE' });
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSavePriceRange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPriceRange) return;
+    const isNew = !editingPriceRange.id;
+    const url = isNew ? '/api/price-ranges' : `/api/price-ranges/${editingPriceRange.id}`;
+    const method = isNew ? 'POST' : 'PUT';
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingPriceRange)
+      });
+      if (res.ok) {
+        setEditingPriceRange(null);
+        fetchData();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeletePriceRange = async (id: string) => {
+    if (!confirm("Delete this price range?")) return;
+    try {
+      await fetch(`/api/price-ranges/${id}`, { method: 'DELETE' });
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleSaveMobile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingMobile) return;
@@ -280,10 +352,12 @@ export function Admin() {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="mobiles" className="space-y-6">
-          <TabsList className="grid grid-cols-3 max-w-md mx-auto">
-            <TabsTrigger value="mobiles" className="font-bold uppercase text-xs"><Smartphone className="h-3 w-3 mr-2" /> Mobiles</TabsTrigger>
-            <TabsTrigger value="posts" className="font-bold uppercase text-xs"><FileText className="h-3 w-3 mr-2" /> Posts</TabsTrigger>
-            <TabsTrigger value="automation" className="font-bold uppercase text-xs"><Zap className="h-3 w-3 mr-2" /> Automation</TabsTrigger>
+          <TabsList className="grid grid-cols-5 max-w-2xl mx-auto">
+            <TabsTrigger value="mobiles" className="font-bold uppercase text-[10px]"><Smartphone className="h-3 w-3 mr-1" /> Mobiles</TabsTrigger>
+            <TabsTrigger value="posts" className="font-bold uppercase text-[10px]"><FileText className="h-3 w-3 mr-1" /> Posts</TabsTrigger>
+            <TabsTrigger value="brands" className="font-bold uppercase text-[10px]"><Smartphone className="h-3 w-3 mr-1" /> Brands</TabsTrigger>
+            <TabsTrigger value="prices" className="font-bold uppercase text-[10px]"><Zap className="h-3 w-3 mr-1" /> Prices</TabsTrigger>
+            <TabsTrigger value="automation" className="font-bold uppercase text-[10px]"><Zap className="h-3 w-3 mr-1" /> AI Sync</TabsTrigger>
           </TabsList>
 
           {/* Mobiles Management */}
@@ -330,7 +404,17 @@ export function Admin() {
                       </div>
                       <div className="space-y-2">
                         <Label>Brand</Label>
-                        <Input value={editingMobile.brand} onChange={e => setEditingMobile({...editingMobile, brand: e.target.value})} required />
+                        <select 
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          value={editingMobile.brand} 
+                          onChange={e => setEditingMobile({...editingMobile, brand: e.target.value})}
+                          required
+                        >
+                          <option value="">Select Brand</option>
+                          {brands.map(b => (
+                            <option key={b.id} value={b.name}>{b.name}</option>
+                          ))}
+                        </select>
                       </div>
                       <div className="space-y-2">
                         <Label>Slug</Label>
@@ -726,7 +810,149 @@ export function Admin() {
             </div>
           </TabsContent>
 
-          {/* Automation Tab */}
+          {/* Brands Management */}
+          <TabsContent value="brands" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-[#1a3a5a]">Manage Brands</h2>
+              <Button size="sm" onClick={() => setEditingBrand({ name: '', slug: '', logo: '', description: '' })}>
+                <Plus className="h-4 w-4 mr-2" /> Add New Brand
+              </Button>
+            </div>
+
+            {editingBrand && (
+              <Card className="border-primary/20">
+                <CardHeader>
+                  <CardTitle className="text-sm uppercase">{editingBrand.id ? 'Edit Brand' : 'Add New Brand'}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSaveBrand} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Brand Name</Label>
+                        <Input value={editingBrand.name} onChange={e => setEditingBrand({...editingBrand, name: e.target.value})} required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Slug</Label>
+                        <Input value={editingBrand.slug} onChange={e => setEditingBrand({...editingBrand, slug: e.target.value})} required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Logo URL</Label>
+                        <Input value={editingBrand.logo} onChange={e => setEditingBrand({...editingBrand, logo: e.target.value})} />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Description</Label>
+                      <Textarea value={editingBrand.description} onChange={e => setEditingBrand({...editingBrand, description: e.target.value})} />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="submit" size="sm">Save Brand</Button>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => setEditingBrand(null)}>Cancel</Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="bg-white border rounded-lg overflow-hidden">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-muted/50 border-b">
+                  <tr>
+                    <th className="px-4 py-3 font-bold">Name</th>
+                    <th className="px-4 py-3 font-bold">Slug</th>
+                    <th className="px-4 py-3 font-bold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {brands.map(brand => (
+                    <tr key={brand.id} className="hover:bg-muted/20">
+                      <td className="px-4 py-3 font-medium">{brand.name}</td>
+                      <td className="px-4 py-3">{brand.slug}</td>
+                      <td className="px-4 py-3 text-right space-x-2">
+                        <Button variant="ghost" size="icon" onClick={() => setEditingBrand(brand)} className="h-8 w-8 text-primary">
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeleteBrand(brand.id)} className="h-8 w-8 text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </TabsContent>
+
+          {/* Price Ranges Management */}
+          <TabsContent value="prices" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-[#1a3a5a]">Manage Price Ranges</h2>
+              <Button size="sm" onClick={() => setEditingPriceRange({ label: '', minPrice: 0, maxPrice: 100000, currency: 'Rs.' })}>
+                <Plus className="h-4 w-4 mr-2" /> Add New Range
+              </Button>
+            </div>
+
+            {editingPriceRange && (
+              <Card className="border-primary/20">
+                <CardHeader>
+                  <CardTitle className="text-sm uppercase">{editingPriceRange.id ? 'Edit Price Range' : 'Add New Price Range'}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSavePriceRange} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Label (e.g. 30k - 40k)</Label>
+                        <Input value={editingPriceRange.label} onChange={e => setEditingPriceRange({...editingPriceRange, label: e.target.value})} required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Currency</Label>
+                        <Input value={editingPriceRange.currency} onChange={e => setEditingPriceRange({...editingPriceRange, currency: e.target.value})} required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Min Price</Label>
+                        <Input type="number" value={editingPriceRange.minPrice} onChange={e => setEditingPriceRange({...editingPriceRange, minPrice: parseInt(e.target.value)})} required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Max Price</Label>
+                        <Input type="number" value={editingPriceRange.maxPrice} onChange={e => setEditingPriceRange({...editingPriceRange, maxPrice: parseInt(e.target.value)})} required />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="submit" size="sm">Save Range</Button>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => setEditingPriceRange(null)}>Cancel</Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="bg-white border rounded-lg overflow-hidden">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-muted/50 border-b">
+                  <tr>
+                    <th className="px-4 py-3 font-bold">Label</th>
+                    <th className="px-4 py-3 font-bold">Range</th>
+                    <th className="px-4 py-3 font-bold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {priceRanges.map(range => (
+                    <tr key={range.id} className="hover:bg-muted/20">
+                      <td className="px-4 py-3 font-medium">{range.label}</td>
+                      <td className="px-4 py-3">{range.currency} {range.minPrice} - {range.maxPrice}</td>
+                      <td className="px-4 py-3 text-right space-x-2">
+                        <Button variant="ghost" size="icon" onClick={() => setEditingPriceRange(range)} className="h-8 w-8 text-primary">
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDeletePriceRange(range.id)} className="h-8 w-8 text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </TabsContent>
           <TabsContent value="automation" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>

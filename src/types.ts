@@ -97,6 +97,15 @@ export interface BlogPost {
 export interface Brand {
   id: string;
   name: string;
-  logo: string;
-  description: string;
+  slug: string;
+  logo?: string;
+  description?: string;
+}
+
+export interface PriceRange {
+  id: string;
+  label: string;
+  minPrice: number;
+  maxPrice: number;
+  currency: string;
 }

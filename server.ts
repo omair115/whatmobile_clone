@@ -92,9 +92,133 @@ async function startServer() {
   });
 
   app.get("/api/mobiles", async (req, res) => {
+    const { brand, minPrice, maxPrice } = req.query;
     try {
-      const result = await pool.query('SELECT * FROM mobiles ORDER BY created_at DESC');
+      let query = 'SELECT * FROM mobiles';
+      const params: any[] = [];
+      const conditions: string[] = [];
+
+      if (brand) {
+        conditions.push(`brand ILIKE $${params.length + 1}`);
+        params.push(brand);
+      }
+
+      if (minPrice) {
+        conditions.push(`CAST(price AS INTEGER) >= $${params.length + 1}`);
+        params.push(minPrice);
+      }
+
+      if (maxPrice) {
+        conditions.push(`CAST(price AS INTEGER) <= $${params.length + 1}`);
+        params.push(maxPrice);
+      }
+
+      if (conditions.length > 0) {
+        query += ' WHERE ' + conditions.join(' AND ');
+      }
+
+      query += ' ORDER BY created_at DESC';
+      
+      const result = await pool.query(query, params);
       res.json(result.rows);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Brand Management
+  app.get("/api/brands", async (req, res) => {
+    try {
+      const result = await pool.query('SELECT * FROM brands ORDER BY name ASC');
+      res.json(result.rows);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/brands", async (req, res) => {
+    const { name, slug, logo, description } = req.body;
+    const id = uuidv4();
+    try {
+      const result = await pool.query(
+        'INSERT INTO brands (id, name, slug, logo, description) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [id, name, slug, logo, description]
+      );
+      res.status(201).json(result.rows[0]);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.put("/api/brands/:id", async (req, res) => {
+    const { name, slug, logo, description } = req.body;
+    try {
+      const result = await pool.query(
+        'UPDATE brands SET name = $1, slug = $2, logo = $3, description = $4 WHERE id = $5 RETURNING *',
+        [name, slug, logo, description, req.params.id]
+      );
+      res.json(result.rows[0]);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/brands/:id", async (req, res) => {
+    try {
+      await pool.query('DELETE FROM brands WHERE id = $1', [req.params.id]);
+      res.json({ message: "Brand deleted successfully" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Price Range Management
+  app.get("/api/price-ranges", async (req, res) => {
+    try {
+      const result = await pool.query('SELECT * FROM price_ranges ORDER BY min_price ASC');
+      res.json(result.rows.map((r: any) => ({
+        id: r.id,
+        label: r.label,
+        minPrice: r.min_price,
+        maxPrice: r.max_price,
+        currency: r.currency
+      })));
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/price-ranges", async (req, res) => {
+    const { label, minPrice, maxPrice, currency } = req.body;
+    const id = uuidv4();
+    try {
+      const result = await pool.query(
+        'INSERT INTO price_ranges (id, label, min_price, max_price, currency) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [id, label, minPrice, maxPrice, currency || 'Rs.']
+      );
+      res.status(201).json(result.rows[0]);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.put("/api/price-ranges/:id", async (req, res) => {
+    const { label, minPrice, maxPrice, currency } = req.body;
+    try {
+      const result = await pool.query(
+        'UPDATE price_ranges SET label = $1, min_price = $2, max_price = $3, currency = $4 WHERE id = $5 RETURNING *',
+        [label, minPrice, maxPrice, currency, req.params.id]
+      );
+      res.json(result.rows[0]);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/price-ranges/:id", async (req, res) => {
+    try {
+      await pool.query('DELETE FROM price_ranges WHERE id = $1', [req.params.id]);
+      res.json({ message: "Price range deleted successfully" });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -239,6 +363,38 @@ async function startServer() {
           seo_description: 'Everything we know about iPhone 18 Pro colors.'
         }
       ];
+
+      const dummyPriceRanges = [
+        { id: uuidv4(), label: 'Under 30k', min_price: 0, max_price: 30000, currency: 'Rs.' },
+        { id: uuidv4(), label: '30k - 50k', min_price: 30000, max_price: 50000, currency: 'Rs.' },
+        { id: uuidv4(), label: '50k - 80k', min_price: 50000, max_price: 80000, currency: 'Rs.' },
+        { id: uuidv4(), label: '80k - 150k', min_price: 80000, max_price: 150000, currency: 'Rs.' },
+        { id: uuidv4(), label: 'Above 150k', min_price: 150000, max_price: 1000000, currency: 'Rs.' }
+      ];
+
+      const dummyBrands = [
+        { id: uuidv4(), name: 'Samsung', slug: 'samsung', logo: '', description: 'Samsung Mobiles' },
+        { id: uuidv4(), name: 'Apple', slug: 'apple', logo: '', description: 'Apple iPhones' },
+        { id: uuidv4(), name: 'Xiaomi', slug: 'xiaomi', logo: '', description: 'Xiaomi Mobiles' },
+        { id: uuidv4(), name: 'Vivo', slug: 'vivo', logo: '', description: 'Vivo Mobiles' },
+        { id: uuidv4(), name: 'Oppo', slug: 'oppo', logo: '', description: 'Oppo Mobiles' },
+        { id: uuidv4(), name: 'Infinix', slug: 'infinix', logo: '', description: 'Infinix Mobiles' },
+        { id: uuidv4(), name: 'Tecno', slug: 'tecno', logo: '', description: 'Tecno Mobiles' }
+      ];
+
+      for (const br of dummyBrands) {
+        await pool.query(
+          'INSERT INTO brands (id, name, slug, logo, description) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (name) DO NOTHING',
+          [br.id, br.name, br.slug, br.logo, br.description]
+        );
+      }
+
+      for (const pr of dummyPriceRanges) {
+        await pool.query(
+          'INSERT INTO price_ranges (id, label, min_price, max_price, currency) VALUES ($1, $2, $3, $4, $5)',
+          [pr.id, pr.label, pr.min_price, pr.max_price, pr.currency]
+        );
+      }
 
       for (const m of dummyMobiles) {
         await pool.query(

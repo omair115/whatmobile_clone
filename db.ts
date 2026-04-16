@@ -60,8 +60,17 @@ const initDb = async () => {
         CREATE TABLE IF NOT EXISTS brands (
           id UUID PRIMARY KEY,
           name TEXT UNIQUE NOT NULL,
+          slug TEXT UNIQUE NOT NULL,
           logo TEXT,
           description TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS price_ranges (
+          id UUID PRIMARY KEY,
+          label TEXT NOT NULL,
+          min_price INTEGER NOT NULL,
+          max_price INTEGER NOT NULL,
+          currency TEXT DEFAULT 'Rs.'
         );
       `);
       console.log("PostgreSQL tables initialized");
