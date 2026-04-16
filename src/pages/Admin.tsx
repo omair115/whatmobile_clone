@@ -172,18 +172,35 @@ export function Admin() {
     const url = isNew ? '/api/mobiles' : `/api/mobiles/${editingMobile.id}`;
     const method = isNew ? 'POST' : 'PUT';
 
+    // Ensure all fields have at least default values to avoid backend errors
+    const payload = {
+      ...editingMobile,
+      currency: editingMobile.currency || 'Rs.',
+      launchDate: editingMobile.launchDate || new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      images: Array.isArray(editingMobile.images) ? editingMobile.images : [],
+      specs: editingMobile.specs || { display: '', camera: '', battery: '', processor: '', ram: '', storage: '', os: '' },
+      features: Array.isArray(editingMobile.features) ? editingMobile.features : [],
+      category: editingMobile.category || 'mid-range',
+      seoTitle: editingMobile.seoTitle || `${editingMobile.name} Price in Pakistan & Specs`,
+      seoDescription: editingMobile.seoDescription || `Check out ${editingMobile.name} price in Pakistan and full specifications.`
+    };
+
     try {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingMobile)
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
         setEditingMobile(null);
         fetchData();
+      } else {
+        const err = await res.json();
+        alert(`Error: ${err.error}`);
       }
     } catch (err) {
       console.error(err);
+      alert("Failed to save mobile. Check console for details.");
     }
   };
 
@@ -194,18 +211,30 @@ export function Admin() {
     const url = isNew ? '/api/posts' : `/api/posts/${editingPost.id}`;
     const method = isNew ? 'POST' : 'PUT';
 
+    const payload = {
+      ...editingPost,
+      author: editingPost.author || 'Admin',
+      tags: Array.isArray(editingPost.tags) ? editingPost.tags : [],
+      seoTitle: editingPost.seoTitle || editingPost.title,
+      seoDescription: editingPost.seoDescription || editingPost.content?.substring(0, 160)
+    };
+
     try {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingPost)
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
         setEditingPost(null);
         fetchData();
+      } else {
+        const err = await res.json();
+        alert(`Error: ${err.error}`);
       }
     } catch (err) {
       console.error(err);
+      alert("Failed to save post.");
     }
   };
 
@@ -272,29 +301,118 @@ export function Admin() {
                   <CardTitle className="text-sm uppercase">{editingMobile.id ? 'Edit Mobile' : 'Add New Mobile'}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleSaveMobile} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Mobile Name</Label>
-                      <Input value={editingMobile.name} onChange={e => setEditingMobile({...editingMobile, name: e.target.value})} required />
+                  <form onSubmit={handleSaveMobile} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Mobile Name</Label>
+                        <Input value={editingMobile.name} onChange={e => setEditingMobile({...editingMobile, name: e.target.value})} required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Brand</Label>
+                        <Input value={editingMobile.brand} onChange={e => setEditingMobile({...editingMobile, brand: e.target.value})} required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Slug</Label>
+                        <Input value={editingMobile.slug} onChange={e => setEditingMobile({...editingMobile, slug: e.target.value})} required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Price (Numeric)</Label>
+                        <Input value={editingMobile.price} onChange={e => setEditingMobile({...editingMobile, price: e.target.value})} required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Currency</Label>
+                        <Input value={editingMobile.currency || 'Rs.'} onChange={e => setEditingMobile({...editingMobile, currency: e.target.value})} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Launch Date</Label>
+                        <Input value={editingMobile.launchDate || ''} onChange={e => setEditingMobile({...editingMobile, launchDate: e.target.value})} placeholder="e.g. Mar 2026" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Category</Label>
+                        <select 
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          value={editingMobile.category || 'mid-range'} 
+                          onChange={e => setEditingMobile({...editingMobile, category: e.target.value as any})}
+                        >
+                          <option value="budget">Budget</option>
+                          <option value="mid-range">Mid-Range</option>
+                          <option value="flagship">Flagship</option>
+                        </select>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Brand</Label>
-                      <Input value={editingMobile.brand} onChange={e => setEditingMobile({...editingMobile, brand: e.target.value})} required />
+
+                    <div className="space-y-4 border-t pt-4">
+                      <h3 className="text-sm font-bold uppercase">Specifications</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label>Display</Label>
+                          <Input value={editingMobile.specs?.display || ''} onChange={e => setEditingMobile({...editingMobile, specs: {...(editingMobile.specs || {} as any), display: e.target.value}})} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Processor</Label>
+                          <Input value={editingMobile.specs?.processor || ''} onChange={e => setEditingMobile({...editingMobile, specs: {...(editingMobile.specs || {} as any), processor: e.target.value}})} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>RAM</Label>
+                          <Input value={editingMobile.specs?.ram || ''} onChange={e => setEditingMobile({...editingMobile, specs: {...(editingMobile.specs || {} as any), ram: e.target.value}})} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Storage</Label>
+                          <Input value={editingMobile.specs?.storage || ''} onChange={e => setEditingMobile({...editingMobile, specs: {...(editingMobile.specs || {} as any), storage: e.target.value}})} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Camera</Label>
+                          <Input value={editingMobile.specs?.camera || ''} onChange={e => setEditingMobile({...editingMobile, specs: {...(editingMobile.specs || {} as any), camera: e.target.value}})} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Battery</Label>
+                          <Input value={editingMobile.specs?.battery || ''} onChange={e => setEditingMobile({...editingMobile, specs: {...(editingMobile.specs || {} as any), battery: e.target.value}})} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>OS</Label>
+                          <Input value={editingMobile.specs?.os || ''} onChange={e => setEditingMobile({...editingMobile, specs: {...(editingMobile.specs || {} as any), os: e.target.value}})} />
+                        </div>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Slug</Label>
-                      <Input value={editingMobile.slug} onChange={e => setEditingMobile({...editingMobile, slug: e.target.value})} required />
+
+                    <div className="space-y-4 border-t pt-4">
+                      <h3 className="text-sm font-bold uppercase">Media & Features</h3>
+                      <div className="space-y-2">
+                        <Label>Image URLs (Comma separated)</Label>
+                        <Input 
+                          value={editingMobile.images?.join(', ') || ''} 
+                          onChange={e => setEditingMobile({...editingMobile, images: e.target.value.split(',').map(s => s.trim())})} 
+                          placeholder="https://example.com/img1.jpg, https://example.com/img2.jpg"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Features (Comma separated)</Label>
+                        <Input 
+                          value={editingMobile.features?.join(', ') || ''} 
+                          onChange={e => setEditingMobile({...editingMobile, features: e.target.value.split(',').map(s => s.trim())})} 
+                          placeholder="Fast Charging, 5G, AI Camera"
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Price</Label>
-                      <Input value={editingMobile.price} onChange={e => setEditingMobile({...editingMobile, price: e.target.value})} required />
+
+                    <div className="space-y-4 border-t pt-4">
+                      <h3 className="text-sm font-bold uppercase">SEO & Content</h3>
+                      <div className="space-y-2">
+                        <Label>SEO Title</Label>
+                        <Input value={editingMobile.seoTitle || ''} onChange={e => setEditingMobile({...editingMobile, seoTitle: e.target.value})} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>SEO Description</Label>
+                        <Textarea value={editingMobile.seoDescription || ''} onChange={e => setEditingMobile({...editingMobile, seoDescription: e.target.value})} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Description</Label>
+                        <Textarea className="h-32" value={editingMobile.description} onChange={e => setEditingMobile({...editingMobile, description: e.target.value})} />
+                      </div>
                     </div>
-                    <div className="md:col-span-2 space-y-2">
-                      <Label>Description</Label>
-                      <Textarea value={editingMobile.description} onChange={e => setEditingMobile({...editingMobile, description: e.target.value})} />
-                    </div>
-                    <div className="flex gap-2 md:col-span-2">
-                      <Button type="submit" size="sm">Save Mobile</Button>
+
+                    <div className="flex gap-2 pt-4 border-t">
+                      <Button type="submit" size="sm" className="font-bold">Save Mobile</Button>
                       <Button type="button" variant="ghost" size="sm" onClick={() => setEditingMobile(null)}>Cancel</Button>
                     </div>
                   </form>

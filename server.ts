@@ -297,7 +297,7 @@ async function startServer() {
 
   // Mobile Management
   app.put("/api/mobiles/:id", async (req, res) => {
-    const { name, brand, slug, price, currency, launch_date, images, specs, description, seo_title, seo_description, category, features } = req.body;
+    const { name, brand, slug, price, currency, launchDate, images, specs, description, seoTitle, seoDescription, category, features } = req.body;
     try {
       const query = `
         UPDATE mobiles 
@@ -307,7 +307,7 @@ async function startServer() {
         WHERE id = $14
         RETURNING id, slug
       `;
-      const values = [name, brand, slug, price, currency, launch_date, JSON.stringify(images), JSON.stringify(specs), description, seo_title, seo_description, category, JSON.stringify(features), req.params.id];
+      const values = [name, brand, slug, price, currency, launchDate, JSON.stringify(images), JSON.stringify(specs), description, seoTitle, seoDescription, category, JSON.stringify(features), req.params.id];
       const result = await pool.query(query, values);
       if (result.rows.length === 0) return res.status(404).json({ error: "Mobile not found" });
       res.json(result.rows[0]);
@@ -328,7 +328,7 @@ async function startServer() {
 
   // Post Management
   app.put("/api/posts/:id", async (req, res) => {
-    const { title, slug, content, author, image, tags, seo_title, seo_description } = req.body;
+    const { title, slug, content, author, image, tags, seoTitle, seoDescription } = req.body;
     try {
       const query = `
         UPDATE posts 
@@ -337,7 +337,7 @@ async function startServer() {
         WHERE id = $9
         RETURNING id, slug
       `;
-      const values = [title, slug, content, author, image, JSON.stringify(tags), seo_title, seo_description, req.params.id];
+      const values = [title, slug, content, author, image, JSON.stringify(tags), seoTitle, seoDescription, req.params.id];
       const result = await pool.query(query, values);
       if (result.rows.length === 0) return res.status(404).json({ error: "Post not found" });
       res.json(result.rows[0]);
