@@ -109,3 +109,33 @@ export interface PriceRange {
   maxPrice: number;
   currency: string;
 }
+
+export interface Network {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface RamOption {
+  id: string;
+  label: string;
+  slug: string;
+}
+
+export interface ScreenSize {
+  id: string;
+  label: string;
+  slug: string;
+}
+
+export interface MobileFeature {
+  id: string;
+  label: string;
+  slug: string;
+}
+
+export interface OsOption {
+  id: string;
+  name: string;
+  slug: string;
+}

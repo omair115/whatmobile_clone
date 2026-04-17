@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Zap, RefreshCw, CheckCircle2, AlertCircle, Plus, Edit2, Trash2, LogOut, Smartphone, FileText, Settings } from 'lucide-react';
-import { Mobile, BlogPost, Brand, PriceRange } from '@/src/types';
+import { Mobile, BlogPost, Brand, PriceRange, Network, RamOption, ScreenSize, MobileFeature, OsOption } from '@/src/types';
 
 export function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -19,6 +19,12 @@ export function Admin() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [priceRanges, setPriceRanges] = useState<PriceRange[]>([]);
+  const [networks, setNetworks] = useState<Network[]>([]);
+  const [ramOptions, setRamOptions] = useState<RamOption[]>([]);
+  const [screenSizes, setScreenSizes] = useState<ScreenSize[]>([]);
+  const [mobileFeatures, setMobileFeatures] = useState<MobileFeature[]>([]);
+  const [osOptions, setOsOptions] = useState<OsOption[]>([]);
+
   const [isSyncing, setIsSyncing] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
@@ -27,6 +33,11 @@ export function Admin() {
   const [editingPost, setEditingPost] = useState<Partial<BlogPost> | null>(null);
   const [editingBrand, setEditingBrand] = useState<Partial<Brand> | null>(null);
   const [editingPriceRange, setEditingPriceRange] = useState<Partial<PriceRange> | null>(null);
+  const [editingNetwork, setEditingNetwork] = useState<Partial<Network> | null>(null);
+  const [editingRam, setEditingRam] = useState<Partial<RamOption> | null>(null);
+  const [editingScreen, setEditingScreen] = useState<Partial<ScreenSize> | null>(null);
+  const [editingFeature, setEditingFeature] = useState<Partial<MobileFeature> | null>(null);
+  const [editingOS, setEditingOS] = useState<Partial<OsOption> | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
@@ -38,20 +49,36 @@ export function Admin() {
 
   const fetchData = async () => {
     try {
-      const [mobRes, postRes, brandRes, priceRes] = await Promise.all([
+      const [mobRes, postRes, brandRes, priceRes, netRes, ramRes, screenRes, featRes, osRes] = await Promise.all([
         fetch('/api/mobiles'),
         fetch('/api/posts'),
         fetch('/api/brands'),
-        fetch('/api/price-ranges')
+        fetch('/api/price-ranges'),
+        fetch('/api/networks'),
+        fetch('/api/ram-options'),
+        fetch('/api/screen-sizes'),
+        fetch('/api/mobile-features'),
+        fetch('/api/os-options')
       ]);
       const mobData = await mobRes.json();
       const postData = await postRes.json();
       const brandData = await brandRes.json();
       const priceData = await priceRes.json();
+      const netData = await netRes.json();
+      const ramData = await ramRes.json();
+      const screenData = await screenRes.json();
+      const featData = await featRes.json();
+      const osData = await osRes.json();
+
       if (Array.isArray(mobData)) setMobiles(mobData);
       if (Array.isArray(postData)) setPosts(postData);
       if (Array.isArray(brandData)) setBrands(brandData);
       if (Array.isArray(priceData)) setPriceRanges(priceData);
+      if (Array.isArray(netData)) setNetworks(netData);
+      if (Array.isArray(ramData)) setRamOptions(ramData);
+      if (Array.isArray(screenData)) setScreenSizes(screenData);
+      if (Array.isArray(featData)) setMobileFeatures(featData);
+      if (Array.isArray(osData)) setOsOptions(osData);
     } catch (err) {
       console.error("Error fetching data:", err);
     }
@@ -237,6 +264,35 @@ export function Admin() {
     }
   };
 
+  const handleSaveAttribute = async (type: string, data: any, setEditing: (val: any) => void) => {
+    const isNew = !data.id;
+    const url = isNew ? `/api/${type}` : `/api/${type}/${data.id}`;
+    const method = isNew ? 'POST' : 'PUT';
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        setEditing(null);
+        fetchData();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteAttribute = async (type: string, id: string) => {
+    if (!confirm(`Delete this ${type}?`)) return;
+    try {
+      await fetch(`/api/${type}/${id}`, { method: 'DELETE' });
+      fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleSaveMobile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingMobile) return;
@@ -352,12 +408,13 @@ export function Admin() {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="mobiles" className="space-y-6">
-          <TabsList className="grid grid-cols-5 max-w-2xl mx-auto">
+          <TabsList className="grid grid-cols-6 max-w-3xl mx-auto">
             <TabsTrigger value="mobiles" className="font-bold uppercase text-[10px]"><Smartphone className="h-3 w-3 mr-1" /> Mobiles</TabsTrigger>
             <TabsTrigger value="posts" className="font-bold uppercase text-[10px]"><FileText className="h-3 w-3 mr-1" /> Posts</TabsTrigger>
             <TabsTrigger value="brands" className="font-bold uppercase text-[10px]"><Smartphone className="h-3 w-3 mr-1" /> Brands</TabsTrigger>
             <TabsTrigger value="prices" className="font-bold uppercase text-[10px]"><Zap className="h-3 w-3 mr-1" /> Prices</TabsTrigger>
-            <TabsTrigger value="automation" className="font-bold uppercase text-[10px]"><Zap className="h-3 w-3 mr-1" /> AI Sync</TabsTrigger>
+            <TabsTrigger value="attributes" className="font-bold uppercase text-[10px]"><Settings className="h-3 w-3 mr-1" /> Attributes</TabsTrigger>
+            <TabsTrigger value="automation" className="font-bold uppercase text-[10px]"><RefreshCw className="h-3 w-3 mr-1" /> AI Sync</TabsTrigger>
           </TabsList>
 
           {/* Mobiles Management */}
@@ -434,6 +491,50 @@ export function Admin() {
                           <option value="budget">Budget</option>
                           <option value="mid-range">Mid-Range</option>
                           <option value="flagship">Flagship</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Network</Label>
+                        <select 
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          value={(editingMobile as any).network || ''} 
+                          onChange={e => setEditingMobile({...editingMobile, network: e.target.value} as any)}
+                        >
+                          <option value="">Select Network</option>
+                          {networks.map(n => <option key={n.id} value={n.name}>{n.name}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>RAM</Label>
+                        <select 
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          value={(editingMobile as any).ram || ''} 
+                          onChange={e => setEditingMobile({...editingMobile, ram: e.target.value} as any)}
+                        >
+                          <option value="">Select RAM</option>
+                          {ramOptions.map(r => <option key={r.id} value={r.label}>{r.label}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Screen Size</Label>
+                        <select 
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          value={(editingMobile as any).screen_size || ''} 
+                          onChange={e => setEditingMobile({...editingMobile, screen_size: e.target.value} as any)}
+                        >
+                          <option value="">Select Screen Size</option>
+                          {screenSizes.map(s => <option key={s.id} value={s.label}>{s.label}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Operating System (OS)</Label>
+                        <select 
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          value={(editingMobile as any).os || ''} 
+                          onChange={e => setEditingMobile({...editingMobile, os: e.target.value} as any)}
+                        >
+                          <option value="">Select OS</option>
+                          {osOptions.map(o => <option key={o.id} value={o.name}>{o.name}</option>)}
                         </select>
                       </div>
                     </div>
@@ -952,6 +1053,160 @@ export function Admin() {
                 </tbody>
               </table>
             </div>
+          </TabsContent>
+
+          {/* ATTRIBUTES MANAGEMENT */}
+          <TabsContent value="attributes" className="space-y-6">
+            <h2 className="text-xl font-bold text-[#1a3a5a]">Manage Search Categories</h2>
+            <Tabs defaultValue="networks">
+              <TabsList className="flex flex-wrap h-auto gap-2 bg-transparent p-0">
+                <TabsTrigger value="networks" className="data-[state=active]:bg-primary data-[state=active]:text-white border">Networks</TabsTrigger>
+                <TabsTrigger value="ram" className="data-[state=active]:bg-primary data-[state=active]:text-white border">RAM</TabsTrigger>
+                <TabsTrigger value="screen" className="data-[state=active]:bg-primary data-[state=active]:text-white border">Screen Sizes</TabsTrigger>
+                <TabsTrigger value="features" className="data-[state=active]:bg-primary data-[state=active]:text-white border">Features (Cam)</TabsTrigger>
+                <TabsTrigger value="os" className="data-[state=active]:bg-primary data-[state=active]:text-white border">OS</TabsTrigger>
+              </TabsList>
+
+              {/* Networks Subtab */}
+              <TabsContent value="networks" className="pt-4 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-bold">Networks</h3>
+                  <Button size="sm" onClick={() => setEditingNetwork({ name: '', slug: '' })}><Plus className="h-4 w-4 mr-1" /> Add Network</Button>
+                </div>
+                {editingNetwork && (
+                  <Card p-4 className="space-y-2 p-4">
+                    <Label>Name</Label>
+                    <Input value={editingNetwork.name} onChange={e => setEditingNetwork({...editingNetwork, name: e.target.value})} />
+                    <Label>Slug</Label>
+                    <Input value={editingNetwork.slug} onChange={e => setEditingNetwork({...editingNetwork, slug: e.target.value})} />
+                    <div className="flex gap-2 mt-2">
+                      <Button size="sm" onClick={() => handleSaveAttribute('networks', editingNetwork, setEditingNetwork)}>Save</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingNetwork(null)}>Cancel</Button>
+                    </div>
+                  </Card>
+                )}
+                <div className="bg-white border rounded">
+                  {networks.map(n => (
+                    <div key={n.id} className="flex justify-between p-2 border-b last:border-0 items-center">
+                      <span>{n.name}</span>
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteAttribute('networks', n.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+
+              {/* RAM Subtab */}
+              <TabsContent value="ram" className="pt-4 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-bold">RAM Options</h3>
+                  <Button size="sm" onClick={() => setEditingRam({ label: '', slug: '' })}><Plus className="h-4 w-4 mr-1" /> Add RAM</Button>
+                </div>
+                {editingRam && (
+                  <Card className="p-4 space-y-2">
+                    <Label>Label</Label>
+                    <Input value={editingRam.label} onChange={e => setEditingRam({...editingRam, label: e.target.value})} />
+                    <Label>Slug</Label>
+                    <Input value={editingRam.slug} onChange={e => setEditingRam({...editingRam, slug: e.target.value})} />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => handleSaveAttribute('ram-options', editingRam, setEditingRam)}>Save</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingRam(null)}>Cancel</Button>
+                    </div>
+                  </Card>
+                )}
+                <div className="bg-white border rounded">
+                  {ramOptions.map(r => (
+                    <div key={r.id} className="flex justify-between p-2 border-b last:border-0 items-center">
+                      <span>{r.label}</span>
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteAttribute('ram-options', r.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+
+              {/* Screen Subtab */}
+              <TabsContent value="screen" className="pt-4 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-bold">Screen Sizes</h3>
+                  <Button size="sm" onClick={() => setEditingScreen({ label: '', slug: '' })}><Plus className="h-4 w-4 mr-1" /> Add Screen</Button>
+                </div>
+                {editingScreen && (
+                  <Card className="p-4 space-y-2">
+                    <Label>Label</Label>
+                    <Input value={editingScreen.label} onChange={e => setEditingScreen({...editingScreen, label: e.target.value})} />
+                    <Label>Slug</Label>
+                    <Input value={editingScreen.slug} onChange={e => setEditingScreen({...editingScreen, slug: e.target.value})} />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => handleSaveAttribute('screen-sizes', editingScreen, setEditingScreen)}>Save</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingScreen(null)}>Cancel</Button>
+                    </div>
+                  </Card>
+                )}
+                <div className="bg-white border rounded">
+                  {screenSizes.map(s => (
+                    <div key={s.id} className="flex justify-between p-2 border-b last:border-0 items-center">
+                      <span>{s.label}</span>
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteAttribute('screen-sizes', s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+
+              {/* Features Subtab */}
+              <TabsContent value="features" className="pt-4 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-bold">Mobile Features</h3>
+                  <Button size="sm" onClick={() => setEditingFeature({ label: '', slug: '' })}><Plus className="h-4 w-4 mr-1" /> Add Feature</Button>
+                </div>
+                {editingFeature && (
+                  <Card className="p-4 space-y-2">
+                    <Label>Label</Label>
+                    <Input value={editingFeature.label} onChange={e => setEditingFeature({...editingFeature, label: e.target.value})} />
+                    <Label>Slug</Label>
+                    <Input value={editingFeature.slug} onChange={e => setEditingFeature({...editingFeature, slug: e.target.value})} />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => handleSaveAttribute('mobile-features', editingFeature, setEditingFeature)}>Save</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingFeature(null)}>Cancel</Button>
+                    </div>
+                  </Card>
+                )}
+                <div className="bg-white border rounded">
+                  {mobileFeatures.map(f => (
+                    <div key={f.id} className="flex justify-between p-2 border-b last:border-0 items-center">
+                      <span>{f.label}</span>
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteAttribute('mobile-features', f.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+
+              {/* OS Subtab */}
+              <TabsContent value="os" className="pt-4 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="font-bold">OS Options</h3>
+                  <Button size="sm" onClick={() => setEditingOS({ name: '', slug: '' })}><Plus className="h-4 w-4 mr-1" /> Add OS</Button>
+                </div>
+                {editingOS && (
+                  <Card className="p-4 space-y-2">
+                    <Label>Name</Label>
+                    <Input value={editingOS.name} onChange={e => setEditingOS({...editingOS, name: e.target.value})} />
+                    <Label>Slug</Label>
+                    <Input value={editingOS.slug} onChange={e => setEditingOS({...editingOS, slug: e.target.value})} />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => handleSaveAttribute('os-options', editingOS, setEditingOS)}>Save</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingOS(null)}>Cancel</Button>
+                    </div>
+                  </Card>
+                )}
+                <div className="bg-white border rounded">
+                  {osOptions.map(o => (
+                    <div key={o.id} className="flex justify-between p-2 border-b last:border-0 items-center">
+                      <span>{o.name}</span>
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteAttribute('os-options', o.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+            </Tabs>
           </TabsContent>
           <TabsContent value="automation" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

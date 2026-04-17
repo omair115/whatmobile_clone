@@ -7,7 +7,7 @@ import { SEO } from '@/src/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChevronRight, Zap, Star, Clock, Smartphone } from 'lucide-react';
-import { Mobile, BlogPost, Brand, PriceRange } from '@/src/types';
+import { Mobile, BlogPost, Brand, PriceRange, Network, RamOption, ScreenSize, MobileFeature, OsOption } from '@/src/types';
 import { BRANDS } from '@/src/constants';
 
 // Mock Data
@@ -157,22 +157,42 @@ export function Home() {
   const [phones, setPhones] = useState<Mobile[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [priceRanges, setPriceRanges] = useState<PriceRange[]>([]);
+  const [networks, setNetworks] = useState<Network[]>([]);
+  const [ramOptions, setRamOptions] = useState<RamOption[]>([]);
+  const [screenSizes, setScreenSizes] = useState<ScreenSize[]>([]);
+  const [mobileFeatures, setMobileFeatures] = useState<MobileFeature[]>([]);
+  const [osOptions, setOsOptions] = useState<OsOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       fetch('/api/mobiles'),
       fetch('/api/brands'),
-      fetch('/api/price-ranges')
+      fetch('/api/price-ranges'),
+      fetch('/api/networks'),
+      fetch('/api/ram-options'),
+      fetch('/api/screen-sizes'),
+      fetch('/api/mobile-features'),
+      fetch('/api/os-options')
     ])
-      .then(async ([mobRes, brandRes, priceRes]) => {
+      .then(async ([mobRes, brandRes, priceRes, netRes, ramRes, screenRes, featRes, osRes]) => {
         const mobData = await mobRes.json();
         const brandData = await brandRes.json();
         const priceData = await priceRes.json();
+        const netData = await netRes.json();
+        const ramData = await ramRes.json();
+        const screenData = await screenRes.json();
+        const featData = await featRes.json();
+        const osData = await osRes.json();
         
         if (Array.isArray(mobData)) setPhones(mobData);
         if (Array.isArray(brandData)) setBrands(brandData);
         if (Array.isArray(priceData)) setPriceRanges(priceData);
+        if (Array.isArray(netData)) setNetworks(netData);
+        if (Array.isArray(ramData)) setRamOptions(ramData);
+        if (Array.isArray(screenData)) setScreenSizes(screenData);
+        if (Array.isArray(featData)) setMobileFeatures(featData);
+        if (Array.isArray(osData)) setOsOptions(osData);
       })
       .catch(err => console.error(err))
       .finally(() => setIsLoading(false));
@@ -431,7 +451,7 @@ export function Home() {
                 )) : (
                   <>
                     <a href="#" className="px-3 py-1.5 hover:bg-muted border-b border-muted/50">Prices {'>'} $1000</a>
-                    <a href="#" className="px-3 py-1.5 hover:bg-muted border-b border-muted/50">$800 - $1000</a>
+                    <a href="#" className="px-3 py-1.5 hover:bg-muted border-b border-muted/50 border-b-muted/50">$800 - $1000</a>
                     <a href="#" className="px-3 py-1.5 hover:bg-muted border-b border-muted/50">$600 - $800</a>
                     <a href="#" className="px-3 py-1.5 hover:bg-muted border-b border-muted/50">$400 - $600</a>
                     <a href="#" className="px-3 py-1.5 hover:bg-muted border-b border-muted/50">$200 - $400</a>
@@ -440,6 +460,86 @@ export function Home() {
                 )}
               </div>
             </section>
+
+            {/* Search by Network Sidebar */}
+            {networks.length > 0 && (
+              <section className="bg-white border rounded-lg shadow-sm overflow-hidden mt-4">
+                <div className="bg-[#1a3a5a] text-white px-4 py-2 text-center text-xs font-bold uppercase">
+                  Search by Network
+                </div>
+                <div className="p-2 grid grid-cols-1 gap-0.5 text-[11px] font-medium">
+                  {networks.map(n => (
+                    <a key={n.id} href={`/network/${n.slug}`} className="px-3 py-1.5 hover:bg-muted border-b border-muted/50 block">
+                      {n.name}
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Search by RAM Sidebar */}
+            {ramOptions.length > 0 && (
+              <section className="bg-white border rounded-lg shadow-sm overflow-hidden mt-4">
+                <div className="bg-[#1a3a5a] text-white px-4 py-2 text-center text-xs font-bold uppercase">
+                  Search by RAM
+                </div>
+                <div className="p-2 grid grid-cols-1 gap-0.5 text-[11px] font-medium">
+                  {ramOptions.map(r => (
+                    <a key={r.id} href={`/ram/${r.slug}`} className="px-3 py-1.5 hover:bg-muted border-b border-muted/50 block">
+                      {r.label}
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Search by Screen Sidebar */}
+            {screenSizes.length > 0 && (
+              <section className="bg-white border rounded-lg shadow-sm overflow-hidden mt-4">
+                <div className="bg-[#1a3a5a] text-white px-4 py-2 text-center text-xs font-bold uppercase">
+                  Search by Screen
+                </div>
+                <div className="p-2 grid grid-cols-1 gap-0.5 text-[11px] font-medium">
+                  {screenSizes.map(s => (
+                    <a key={s.id} href={`/screen/${s.slug}`} className="px-3 py-1.5 hover:bg-muted border-b border-muted/50 block">
+                      {s.label}
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Search by Feature Sidebar */}
+            {mobileFeatures.length > 0 && (
+              <section className="bg-white border rounded-lg shadow-sm overflow-hidden mt-4">
+                <div className="bg-[#1a3a5a] text-white px-4 py-2 text-center text-xs font-bold uppercase">
+                  Search by Cam / Feature
+                </div>
+                <div className="p-2 grid grid-cols-1 gap-0.5 text-[11px] font-medium">
+                  {mobileFeatures.map(f => (
+                    <a key={f.id} href={`/feature/${f.slug}`} className="px-3 py-1.5 hover:bg-muted border-b border-muted/50 block">
+                      {f.label}
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Search by OS Sidebar */}
+            {osOptions.length > 0 && (
+              <section className="bg-white border rounded-lg shadow-sm overflow-hidden mt-4">
+                <div className="bg-[#1a3a5a] text-white px-4 py-2 text-center text-xs font-bold uppercase">
+                  Search by OS
+                </div>
+                <div className="p-2 grid grid-cols-1 gap-0.5 text-[11px] font-medium">
+                  {osOptions.map(o => (
+                    <a key={o.id} href={`/os/${o.slug}`} className="px-3 py-1.5 hover:bg-muted border-b border-muted/50 block">
+                      {o.name}
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         </div>
       </div>

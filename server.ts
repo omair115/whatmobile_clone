@@ -134,6 +134,156 @@ async function startServer() {
     }
   });
 
+  // NETWORK MANAGEMENT
+  app.get("/api/networks", async (req, res) => {
+    try {
+      const result = await pool.query('SELECT * FROM networks ORDER BY name ASC');
+      res.json(result.rows);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/networks", async (req, res) => {
+    const { name, slug } = req.body;
+    const id = uuidv4();
+    try {
+      const result = await pool.query('INSERT INTO networks (id, name, slug) VALUES ($1, $2, $3) RETURNING *', [id, name, slug]);
+      res.status(201).json(result.rows[0]);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/networks/:id", async (req, res) => {
+    try {
+      await pool.query('DELETE FROM networks WHERE id = $1', [req.params.id]);
+      res.json({ message: "Network deleted" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // RAM MANAGEMENT
+  app.get("/api/ram-options", async (req, res) => {
+    try {
+      const result = await pool.query('SELECT * FROM ram_options ORDER BY label ASC');
+      res.json(result.rows);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/ram-options", async (req, res) => {
+    const { label, slug } = req.body;
+    const id = uuidv4();
+    try {
+      const result = await pool.query('INSERT INTO ram_options (id, label, slug) VALUES ($1, $2, $3) RETURNING *', [id, label, slug]);
+      res.status(201).json(result.rows[0]);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/ram-options/:id", async (req, res) => {
+    try {
+      await pool.query('DELETE FROM ram_options WHERE id = $1', [req.params.id]);
+      res.json({ message: "RAM option deleted" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // SCREEN SIZE MANAGEMENT
+  app.get("/api/screen-sizes", async (req, res) => {
+    try {
+      const result = await pool.query('SELECT * FROM screen_sizes ORDER BY label ASC');
+      res.json(result.rows);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/screen-sizes", async (req, res) => {
+    const { label, slug } = req.body;
+    const id = uuidv4();
+    try {
+      const result = await pool.query('INSERT INTO screen_sizes (id, label, slug) VALUES ($1, $2, $3) RETURNING *', [id, label, slug]);
+      res.status(201).json(result.rows[0]);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/screen-sizes/:id", async (req, res) => {
+    try {
+      await pool.query('DELETE FROM screen_sizes WHERE id = $1', [req.params.id]);
+      res.json({ message: "Screen size deleted" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // MOBILE FEATURES MANAGEMENT
+  app.get("/api/mobile-features", async (req, res) => {
+    try {
+      const result = await pool.query('SELECT * FROM mobile_features ORDER BY label ASC');
+      res.json(result.rows);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/mobile-features", async (req, res) => {
+    const { label, slug } = req.body;
+    const id = uuidv4();
+    try {
+      const result = await pool.query('INSERT INTO mobile_features (id, label, slug) VALUES ($1, $2, $3) RETURNING *', [id, label, slug]);
+      res.status(201).json(result.rows[0]);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/mobile-features/:id", async (req, res) => {
+    try {
+      await pool.query('DELETE FROM mobile_features WHERE id = $1', [req.params.id]);
+      res.json({ message: "Feature deleted" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // OS MANAGEMENT
+  app.get("/api/os-options", async (req, res) => {
+    try {
+      const result = await pool.query('SELECT * FROM os_options ORDER BY name ASC');
+      res.json(result.rows);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/os-options", async (req, res) => {
+    const { name, slug } = req.body;
+    const id = uuidv4();
+    try {
+      const result = await pool.query('INSERT INTO os_options (id, name, slug) VALUES ($1, $2, $3) RETURNING *', [id, name, slug]);
+      res.status(201).json(result.rows[0]);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/os-options/:id", async (req, res) => {
+    try {
+      await pool.query('DELETE FROM os_options WHERE id = $1', [req.params.id]);
+      res.json({ message: "OS option deleted" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // API routes
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", db: !!process.env.DATABASE_URL });
@@ -254,16 +404,16 @@ async function startServer() {
   });
 
   app.post("/api/mobiles", async (req, res) => {
-    const { name, brand, slug, price, currency, launchDate, images, specs, description, seoTitle, seoDescription, category, features } = req.body;
+    const { name, brand, slug, price, currency, launchDate, images, specs, description, seoTitle, seoDescription, category, features, network, ram, screen_size, os } = req.body;
     const id = uuidv4();
     
     try {
       const query = `
-        INSERT INTO mobiles (id, name, brand, slug, price, currency, launch_date, images, specs, description, seo_title, seo_description, category, features)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        INSERT INTO mobiles (id, name, brand, slug, price, currency, launch_date, images, specs, description, seo_title, seo_description, category, features, network, ram, screen_size, os)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
         RETURNING id, slug
       `;
-      const values = [id, name, brand, slug, price, currency, launchDate, JSON.stringify(images), JSON.stringify(specs), description, seoTitle, seoDescription, category, JSON.stringify(features)];
+      const values = [id, name, brand, slug, price, currency, launchDate, JSON.stringify(images), JSON.stringify(specs), description, seoTitle, seoDescription, category, JSON.stringify(features), network, ram, screen_size, os];
       const result = await pool.query(query, values);
       res.status(201).json(result.rows[0]);
     } catch (error: any) {
@@ -401,11 +551,68 @@ async function startServer() {
         { id: uuidv4(), name: 'Tecno', slug: 'tecno', logo: '', description: 'Tecno Mobiles' }
       ];
 
+      const dummyNetworks = [
+        { id: uuidv4(), name: '5G Phones', slug: '5g-phones' },
+        { id: uuidv4(), name: '4G Mobiles', slug: '4g-mobiles' },
+        { id: uuidv4(), name: '3G Mobiles', slug: '3g-mobiles' }
+      ];
+
+      const dummyRam = [
+        { id: uuidv4(), label: '2GB RAM', slug: '2gb-ram' },
+        { id: uuidv4(), label: '3GB RAM', slug: '3gb-ram' },
+        { id: uuidv4(), label: '4GB RAM', slug: '4gb-ram' },
+        { id: uuidv4(), label: '6GB RAM', slug: '6gb-ram' },
+        { id: uuidv4(), label: '8GB RAM', slug: '8gb-ram' },
+        { id: uuidv4(), label: '12GB & above RAM', slug: '12gb-plus-ram' }
+      ];
+
+      const dummyScreens = [
+        { id: uuidv4(), label: 'Less Than 3 Inches', slug: 'less-than-3-inches' },
+        { id: uuidv4(), label: '3.0 inch - 4.0 inch', slug: '3-4-inch' },
+        { id: uuidv4(), label: '4.1 inch - 4.9 inch', slug: '4-5-inch' },
+        { id: uuidv4(), label: '5.0 inch - 6.9 inch', slug: '5-7-inch' },
+        { id: uuidv4(), label: '7.0 inch - 8.9 inch', slug: '7-9-inch' }
+      ];
+
+      const dummyFeatures = [
+        { id: uuidv4(), label: 'Camera Mobiles', slug: 'camera-mobiles' },
+        { id: uuidv4(), label: 'Video Recording', slug: 'video-recording' },
+        { id: uuidv4(), label: 'Bluetooth Mobiles', slug: 'bluetooth-mobiles' },
+        { id: uuidv4(), label: 'Dual Sim Phones', slug: 'dual-sim' },
+        { id: uuidv4(), label: 'Wireless LAN', slug: 'wireless-lan' },
+        { id: uuidv4(), label: 'MP3 Playback', slug: 'mp3-playback' },
+        { id: uuidv4(), label: 'FM Radio Mobiles', slug: 'fm-radio' },
+        { id: uuidv4(), label: 'Memory Card', slug: 'memory-card' }
+      ];
+
+      const dummyOs = [
+        { id: uuidv4(), name: 'Android Phones', slug: 'android-phones' },
+        { id: uuidv4(), name: 'Feature Phones', slug: 'feature-phones' },
+        { id: uuidv4(), name: 'Windows Phones', slug: 'windows-phones' },
+        { id: uuidv4(), name: 'All Smartphones', slug: 'smartphones' }
+      ];
+
       for (const br of dummyBrands) {
         await pool.query(
           'INSERT INTO brands (id, name, slug, logo, description) VALUES ($1, $2, $3, $4, $5) ON CONFLICT (name) DO NOTHING',
           [br.id, br.name, br.slug, br.logo, br.description]
         );
+      }
+
+      for (const net of dummyNetworks) {
+        await pool.query('INSERT INTO networks (id, name, slug) VALUES ($1, $2, $3) ON CONFLICT (slug) DO NOTHING', [net.id, net.name, net.slug]);
+      }
+      for (const r of dummyRam) {
+        await pool.query('INSERT INTO ram_options (id, label, slug) VALUES ($1, $2, $3) ON CONFLICT (slug) DO NOTHING', [r.id, r.label, r.slug]);
+      }
+      for (const s of dummyScreens) {
+        await pool.query('INSERT INTO screen_sizes (id, label, slug) VALUES ($1, $2, $3) ON CONFLICT (slug) DO NOTHING', [s.id, s.label, s.slug]);
+      }
+      for (const f of dummyFeatures) {
+        await pool.query('INSERT INTO mobile_features (id, label, slug) VALUES ($1, $2, $3) ON CONFLICT (slug) DO NOTHING', [f.id, f.label, f.slug]);
+      }
+      for (const o of dummyOs) {
+        await pool.query('INSERT INTO os_options (id, name, slug) VALUES ($1, $2, $3) ON CONFLICT (slug) DO NOTHING', [o.id, o.name, o.slug]);
       }
 
       for (const pr of dummyPriceRanges) {
@@ -417,9 +624,9 @@ async function startServer() {
 
       for (const m of dummyMobiles) {
         await pool.query(
-          `INSERT INTO mobiles (id, name, brand, slug, price, currency, launch_date, images, specs, description, seo_title, seo_description, category, features) 
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) ON CONFLICT (slug) DO NOTHING`,
-          [m.id, m.name, m.brand, m.slug, m.price, m.currency, m.launch_date, m.images, m.specs, m.description, m.seo_title, m.seo_description, m.category, m.features]
+          `INSERT INTO mobiles (id, name, brand, slug, price, currency, launch_date, images, specs, description, seo_title, seo_description, category, features, network, ram, screen_size, os) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) ON CONFLICT (slug) DO NOTHING`,
+          [m.id, m.name, m.brand, m.slug, m.price, m.currency, m.launch_date, m.images, m.specs, m.description, m.seo_title, m.seo_description, m.category, m.features, '5G Phones', '8GB RAM', '5.0 inch - 6.9 inch', 'Android Phones']
         );
       }
 
@@ -450,17 +657,17 @@ async function startServer() {
 
   // Mobile Management
   app.put("/api/mobiles/:id", async (req, res) => {
-    const { name, brand, slug, price, currency, launchDate, images, specs, description, seoTitle, seoDescription, category, features } = req.body;
+    const { name, brand, slug, price, currency, launchDate, images, specs, description, seoTitle, seoDescription, category, features, network, ram, screen_size, os } = req.body;
     try {
       const query = `
         UPDATE mobiles 
         SET name = $1, brand = $2, slug = $3, price = $4, currency = $5, launch_date = $6, 
             images = $7, specs = $8, description = $9, seo_title = $10, seo_description = $11, 
-            category = $12, features = $13
-        WHERE id = $14
+            category = $12, features = $13, network = $14, ram = $15, screen_size = $16, os = $17
+        WHERE id = $18
         RETURNING id, slug
       `;
-      const values = [name, brand, slug, price, currency, launchDate, JSON.stringify(images), JSON.stringify(specs), description, seoTitle, seoDescription, category, JSON.stringify(features), req.params.id];
+      const values = [name, brand, slug, price, currency, launchDate, JSON.stringify(images), JSON.stringify(specs), description, seoTitle, seoDescription, category, JSON.stringify(features), network, ram, screen_size, os, req.params.id];
       const result = await pool.query(query, values);
       if (result.rows.length === 0) return res.status(404).json({ error: "Mobile not found" });
       res.json(result.rows[0]);

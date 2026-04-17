@@ -84,6 +84,36 @@ const initDb = async () => {
           currency TEXT DEFAULT 'Rs.'
         );
 
+        CREATE TABLE IF NOT EXISTS networks (
+          id UUID PRIMARY KEY,
+          name TEXT UNIQUE NOT NULL,
+          slug TEXT UNIQUE NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS ram_options (
+          id UUID PRIMARY KEY,
+          label TEXT UNIQUE NOT NULL,
+          slug TEXT UNIQUE NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS screen_sizes (
+          id UUID PRIMARY KEY,
+          label TEXT UNIQUE NOT NULL,
+          slug TEXT UNIQUE NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS mobile_features (
+          id UUID PRIMARY KEY,
+          label TEXT UNIQUE NOT NULL,
+          slug TEXT UNIQUE NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS os_options (
+          id UUID PRIMARY KEY,
+          name TEXT UNIQUE NOT NULL,
+          slug TEXT UNIQUE NOT NULL
+        );
+
         -- Migration: Add slug column to brands if missing
         DO $$ 
         BEGIN 
@@ -92,6 +122,23 @@ const initDb = async () => {
                 UPDATE brands SET slug = LOWER(REPLACE(name, ' ', '-')) WHERE slug IS NULL;
                 ALTER TABLE brands ALTER COLUMN slug SET NOT NULL;
                 ALTER TABLE brands ADD CONSTRAINT brands_slug_key UNIQUE (slug);
+            END IF;
+        END $$;
+
+        -- Migration: Add new filter columns to mobiles
+        DO $$ 
+        BEGIN 
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='mobiles' AND column_name='network') THEN
+                ALTER TABLE mobiles ADD COLUMN network TEXT;
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='mobiles' AND column_name='ram') THEN
+                ALTER TABLE mobiles ADD COLUMN ram TEXT;
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='mobiles' AND column_name='screen_size') THEN
+                ALTER TABLE mobiles ADD COLUMN screen_size TEXT;
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='mobiles' AND column_name='os') THEN
+                ALTER TABLE mobiles ADD COLUMN os TEXT;
             END IF;
         END $$;
       `);
