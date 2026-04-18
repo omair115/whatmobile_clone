@@ -68,7 +68,7 @@ export function BlogDetail() {
                 <div className="flex flex-wrap items-center gap-6 mb-6 text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    <span>{format(new Date(post.createdAt), 'MMMM dd, yyyy')}</span>
+                    <span>{format(new Date(post.created_at), 'MMMM dd, yyyy')}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4" />

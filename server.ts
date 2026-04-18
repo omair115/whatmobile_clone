@@ -536,6 +536,80 @@ async function startServer() {
     }
   });
 
+  // Similarity and brand-related endpoints
+  app.get("/api/mobiles/:slug/similar", async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const phoneRes = await pool.query('SELECT * FROM mobiles WHERE LOWER(slug) = LOWER($1)', [slug]);
+      if (phoneRes.rows.length === 0) return res.status(404).json({ error: "Mobile not found" });
+      
+      const phone = phoneRes.rows[0];
+      const price = parseInt(phone.price.toString().replace(/,/g, ''));
+      const minPrice = price * 0.8;
+      const maxPrice = price * 1.2;
+      
+      // Select similar phones based on price, camera, os, display
+      // We use ILIKE for spec matching since they are JSON strings
+      const result = await pool.query(`
+        SELECT * FROM mobiles 
+        WHERE id != $1 
+        AND (
+          (CAST(price AS INTEGER) BETWEEN $2 AND $3)
+          OR (specs->'camera'->>'main' ILIKE $4 AND $4 != '')
+          OR (specs->'build'->>'os' ILIKE $5 AND $5 != '')
+          OR (specs->'display'->>'size' ILIKE $6 AND $6 != '')
+        )
+        ORDER BY 
+          (CASE WHEN brand = $7 THEN 1 ELSE 2 END),
+          created_at DESC 
+        LIMIT 6
+      `, [
+        phone.id, 
+        minPrice, 
+        maxPrice, 
+        `%${phone.specs?.camera?.main || ''}%`, 
+        `%${phone.specs?.build?.os || ''}%`, 
+        `%${phone.specs?.display?.size || ''}%`,
+        phone.brand
+      ]);
+      
+      res.json(result.rows);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/mobiles/:slug/brand-related", async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const phoneRes = await pool.query('SELECT brand FROM mobiles WHERE LOWER(slug) = LOWER($1)', [slug]);
+      if (phoneRes.rows.length === 0) return res.status(404).json({ error: "Mobile not found" });
+      
+      const brand = phoneRes.rows[0].brand;
+      const result = await pool.query('SELECT * FROM mobiles WHERE brand = $1 AND LOWER(slug) != LOWER($2) LIMIT 6', [brand, slug]);
+      res.json(result.rows);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/posts/brand/:brand", async (req, res) => {
+    try {
+      const { brand } = req.params;
+      const result = await pool.query(`
+        SELECT * FROM posts 
+        WHERE title ILIKE $1 
+        OR content ILIKE $1 
+        OR tags::text ILIKE $1
+        ORDER BY created_at DESC 
+        LIMIT 4
+      `, [`%${brand}%`]);
+      res.json(result.rows);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.get("/api/posts/:slug", async (req, res) => {
     try {
       const rawSlug = req.params.slug;

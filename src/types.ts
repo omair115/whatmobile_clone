@@ -78,7 +78,7 @@ export interface Mobile {
   seoDescription: string;
   category: 'budget' | 'mid-range' | 'flagship';
   features: string[];
-  createdAt: string;
+  created_at: string;
 }
 
 export interface BlogPost {
@@ -91,7 +91,7 @@ export interface BlogPost {
   tags: string[];
   seoTitle: string;
   seoDescription: string;
-  createdAt: string;
+  created_at: string;
 }
 
 export interface Brand {

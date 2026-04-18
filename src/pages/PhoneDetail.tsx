@@ -6,22 +6,41 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Smartphone, Camera, Battery, Cpu, HardDrive, Monitor, Share2, Heart, Scale, Star, Zap } from 'lucide-react';
-import { Mobile } from '@/src/types';
-
-// No Mock Data
+import { Smartphone, Camera, Battery, Cpu, HardDrive, Monitor, Share2, Heart, Scale, Star, Zap, ChevronRight, Newspaper } from 'lucide-react';
+import { Mobile, BlogPost } from '@/src/types';
+import { motion } from 'motion/react';
 
 export function PhoneDetail() {
   const { slug } = useParams();
   const [phone, setPhone] = useState<Mobile | null>(null);
+  const [similarMobiles, setSimilarMobiles] = useState<Mobile[]>([]);
+  const [brandMobiles, setBrandMobiles] = useState<Mobile[]>([]);
+  const [brandNews, setBrandNews] = useState<BlogPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showFilters, setShowFilters] = useState(true);
 
   useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const threshold = 800; // Roughly after the specs table
+      setShowFilters(scrollY < threshold);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    setIsLoading(true);
     fetch(`/api/mobiles/${slug}`)
       .then(res => res.json())
       .then(data => {
         if (data && !data.error) {
           setPhone(data);
+          // Fetch additional data
+          fetch(`/api/mobiles/${slug}/similar`).then(res => res.json()).then(setSimilarMobiles);
+          fetch(`/api/mobiles/${slug}/brand-related`).then(res => res.json()).then(setBrandMobiles);
+          fetch(`/api/posts/brand/${data.brand}`).then(res => res.json()).then(setBrandNews);
         }
       })
       .catch(err => console.error(err))
@@ -360,12 +379,92 @@ export function PhoneDetail() {
               <p className="font-bold mb-2">Disclaimer.</p>
               <p>{phone.brand} {phone.name} price in Pakistan is updated daily from the price list provided by local shops and dealers but we can not guarantee that the information / price / {phone.name} Prices on this page is 100% correct (Human error is possible), always visit your local shop for exact cell phone cost & rate. {phone.brand} {phone.name} price Pakistan.</p>
             </div>
+
+            {/* Similar Phones Section */}
+            {similarMobiles.length > 0 && (
+              <section className="space-y-4">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <h2 className="text-lg font-black text-[#1a3a5a] uppercase">Similar Phones</h2>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {similarMobiles.map((m) => (
+                    <a key={m.id} href={`/phone/${m.slug}`} className="bg-white border rounded hover:shadow-md transition-shadow p-3 flex flex-col items-center group">
+                      <div className="aspect-[3/4] w-full relative mb-2 overflow-hidden">
+                        <img 
+                          src={m.images[0]} 
+                          alt={m.name} 
+                          className="object-contain w-full h-full group-hover:scale-105 transition-transform" 
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                      <h3 className="text-[10px] font-bold text-center text-[#1a3a5a] group-hover:underline line-clamp-1">{m.name}</h3>
+                      <p className="text-[10px] text-[#d32f2f] font-bold">Rs. {m.price}</p>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* More From Brand Section */}
+            {brandMobiles.length > 0 && (
+              <section className="space-y-4">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <h2 className="text-lg font-black text-[#1a3a5a] uppercase">More {phone.brand} Mobiles</h2>
+                  <a href={`/brand/${phone.brand.toLowerCase()}`} className="text-[10px] font-bold text-[#1a3a5a] hover:underline flex items-center">
+                    View All <ChevronRight className="h-3 w-3" />
+                  </a>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {brandMobiles.map((m) => (
+                    <a key={m.id} href={`/phone/${m.slug}`} className="bg-white border rounded hover:shadow-md transition-shadow p-3 flex flex-col items-center group">
+                      <div className="aspect-[3/4] w-full relative mb-2 overflow-hidden">
+                        <img 
+                          src={m.images[0]} 
+                          alt={m.name} 
+                          className="object-contain w-full h-full group-hover:scale-105 transition-transform" 
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                      <h3 className="text-[10px] font-bold text-center text-[#1a3a5a] group-hover:underline line-clamp-1">{m.name}</h3>
+                      <p className="text-[10px] text-[#d32f2f] font-bold">Rs. {m.price}</p>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Brand News Section */}
+            {brandNews.length > 0 && (
+              <section className="space-y-4">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <h2 className="text-lg font-black text-[#1a3a5a] uppercase">{phone.brand} Latest News</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {brandNews.map((post) => (
+                    <a key={post.id} href={`/blog/${post.slug}`} className="bg-white border rounded overflow-hidden flex gap-3 p-3 hover:shadow-md transition-shadow group">
+                      <div className="w-24 h-24 flex-shrink-0 bg-muted rounded overflow-hidden">
+                        <img 
+                          src={post.image} 
+                          alt={post.title} 
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                      <div className="flex flex-col justify-center">
+                        <h3 className="text-[11px] font-bold text-[#1a3a5a] line-clamp-2 leading-tight group-hover:underline">{post.title}</h3>
+                        <p className="text-[9px] text-muted-foreground mt-1">{new Date(post.created_at).toLocaleDateString()}</p>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
 
           {/* Sidebar */}
           <div className="lg:col-span-4">
             <div className="sticky top-24">
-              <Sidebar />
+              <Sidebar showPriceFilters={showFilters} showFeatureFilters={showFilters} />
             </div>
           </div>
         </div>

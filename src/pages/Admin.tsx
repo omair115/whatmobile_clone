@@ -920,7 +920,7 @@ export function Admin() {
                     <tr key={post.id} className="hover:bg-muted/20">
                       <td className="px-4 py-3 font-medium line-clamp-1">{post.title}</td>
                       <td className="px-4 py-3">{post.author}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{new Date(post.createdAt).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{new Date(post.created_at).toLocaleDateString()}</td>
                       <td className="px-4 py-3 text-right space-x-2">
                         <Button variant="ghost" size="icon" onClick={() => setEditingPost(post)} className="h-8 w-8 text-primary">
                           <Edit2 className="h-4 w-4" />

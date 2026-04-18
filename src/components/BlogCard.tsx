@@ -25,7 +25,7 @@ export function BlogCard({ post }: BlogCardProps) {
           <div className="flex items-center gap-4 mb-3">
             <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
               <Calendar className="h-3 w-3" />
-              <span>{format(new Date(post.createdAt), 'MMM dd, yyyy')}</span>
+              <span>{format(new Date(post.created_at), 'MMM dd, yyyy')}</span>
             </div>
             <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
               <User className="h-3 w-3" />
