@@ -141,6 +141,29 @@ const initDb = async () => {
                 ALTER TABLE mobiles ADD COLUMN os TEXT;
             END IF;
         END $$;
+
+        -- Migration: Add brand columns to posts
+        DO $$ 
+        BEGIN 
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='brand') THEN
+                ALTER TABLE posts ADD COLUMN brand TEXT;
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='brand_id') THEN
+                ALTER TABLE posts ADD COLUMN brand_id TEXT;
+            END IF;
+        END $$;
+
+        -- Gallery Images Table
+        CREATE TABLE IF NOT EXISTS gallery_images (
+          id UUID PRIMARY KEY,
+          file_name TEXT NOT NULL,
+          mime_type TEXT NOT NULL,
+          size INTEGER NOT NULL,
+          data BYTEA NOT NULL,
+          description TEXT,
+          alt_text TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
       `);
       console.log("PostgreSQL tables initialized");
     } finally {

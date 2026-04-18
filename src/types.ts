@@ -141,3 +141,14 @@ export interface OsOption {
   name: string;
   slug: string;
 }
+
+export interface GalleryImage {
+  id: string;
+  url: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  description?: string;
+  altText?: string;
+  created_at: string;
+}

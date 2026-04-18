@@ -6,8 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Zap, RefreshCw, CheckCircle2, AlertCircle, Plus, Edit2, Trash2, LogOut, Smartphone, FileText, Settings } from 'lucide-react';
-import { Mobile, BlogPost, Brand, PriceRange, Network, RamOption, ScreenSize, MobileFeature, OsOption } from '@/src/types';
+import { Zap, RefreshCw, CheckCircle2, AlertCircle, Plus, Edit2, Trash2, LogOut, Smartphone, FileText, Settings, Image as ImageIcon, Copy, Check } from 'lucide-react';
+import { Mobile, BlogPost, Brand, PriceRange, Network, RamOption, ScreenSize, MobileFeature, OsOption, GalleryImage } from '@/src/types';
 
 export function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -24,8 +24,10 @@ export function Admin() {
   const [screenSizes, setScreenSizes] = useState<ScreenSize[]>([]);
   const [mobileFeatures, setMobileFeatures] = useState<MobileFeature[]>([]);
   const [osOptions, setOsOptions] = useState<OsOption[]>([]);
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
 
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
 
@@ -38,6 +40,9 @@ export function Admin() {
   const [editingScreen, setEditingScreen] = useState<Partial<ScreenSize> | null>(null);
   const [editingFeature, setEditingFeature] = useState<Partial<MobileFeature> | null>(null);
   const [editingOS, setEditingOS] = useState<Partial<OsOption> | null>(null);
+  const [imageForm, setImageForm] = useState({ description: '', altText: '' });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
@@ -49,7 +54,7 @@ export function Admin() {
 
   const fetchData = async () => {
     try {
-      const [mobRes, postRes, brandRes, priceRes, netRes, ramRes, screenRes, featRes, osRes] = await Promise.all([
+      const [mobRes, postRes, brandRes, priceRes, netRes, ramRes, screenRes, featRes, osRes, imgRes] = await Promise.all([
         fetch('/api/mobiles'),
         fetch('/api/posts'),
         fetch('/api/brands'),
@@ -58,17 +63,21 @@ export function Admin() {
         fetch('/api/ram-options'),
         fetch('/api/screen-sizes'),
         fetch('/api/mobile-features'),
-        fetch('/api/os-options')
+        fetch('/api/os-options'),
+        fetch('/api/images')
       ]);
-      const mobData = await mobRes.json();
-      const postData = await postRes.json();
-      const brandData = await brandRes.json();
-      const priceData = await priceRes.json();
-      const netData = await netRes.json();
-      const ramData = await ramRes.json();
-      const screenData = await screenRes.json();
-      const featData = await featRes.json();
-      const osData = await osRes.json();
+      const [mobData, postData, brandData, priceData, netData, ramData, screenData, featData, osData, imgData] = await Promise.all([
+        mobRes.json(),
+        postRes.json(),
+        brandRes.json(),
+        priceRes.json(),
+        netRes.json(),
+        ramRes.json(),
+        screenRes.json(),
+        featRes.json(),
+        osRes.json(),
+        imgRes.json()
+      ]);
 
       if (Array.isArray(mobData)) setMobiles(mobData);
       if (Array.isArray(postData)) setPosts(postData);
@@ -79,6 +88,7 @@ export function Admin() {
       if (Array.isArray(screenData)) setScreenSizes(screenData);
       if (Array.isArray(featData)) setMobileFeatures(featData);
       if (Array.isArray(osData)) setOsOptions(osData);
+      if (Array.isArray(imgData)) setGalleryImages(imgData);
     } catch (err) {
       console.error("Error fetching data:", err);
     }
@@ -117,6 +127,56 @@ export function Admin() {
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
     setIsAuthenticated(false);
+  };
+
+  const handleUploadImage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('image', selectedFile);
+    formData.append('description', imageForm.description);
+    formData.append('altText', imageForm.altText);
+
+    try {
+      const res = await fetch('/api/images', {
+        method: 'POST',
+        body: formData,
+      });
+      if (res.ok) {
+        setSelectedFile(null);
+        setImageForm({ description: '', altText: '' });
+        fetchData();
+        const fileInput = document.getElementById('image-upload') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
+      } else {
+        const data = await res.json();
+        alert(data.error || "Upload failed");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Upload failed");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDeleteImage = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this image?")) return;
+    try {
+      const res = await fetch(`/api/images/${id}`, { method: 'DELETE' });
+      if (res.ok) fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const copyToClipboard = (url: string) => {
+    const fullUrl = `${window.location.protocol}//${window.location.host}${url}`;
+    navigator.clipboard.writeText(fullUrl);
+    setCopyStatus(url);
+    setTimeout(() => setCopyStatus(null), 2000);
   };
 
   const addLog = (msg: string) => {
@@ -417,10 +477,11 @@ export function Admin() {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="mobiles" className="space-y-6">
-          <TabsList className="grid grid-cols-6 max-w-3xl mx-auto">
+          <TabsList className="grid grid-cols-7 max-w-4xl mx-auto">
             <TabsTrigger value="mobiles" className="font-bold uppercase text-[10px]"><Smartphone className="h-3 w-3 mr-1" /> Mobiles</TabsTrigger>
             <TabsTrigger value="posts" className="font-bold uppercase text-[10px]"><FileText className="h-3 w-3 mr-1" /> Posts</TabsTrigger>
             <TabsTrigger value="brands" className="font-bold uppercase text-[10px]"><Smartphone className="h-3 w-3 mr-1" /> Brands</TabsTrigger>
+            <TabsTrigger value="gallery" className="font-bold uppercase text-[10px]"><ImageIcon className="h-3 w-3 mr-1" /> Gallery</TabsTrigger>
             <TabsTrigger value="prices" className="font-bold uppercase text-[10px]"><Zap className="h-3 w-3 mr-1" /> Prices</TabsTrigger>
             <TabsTrigger value="attributes" className="font-bold uppercase text-[10px]"><Settings className="h-3 w-3 mr-1" /> Attributes</TabsTrigger>
             <TabsTrigger value="automation" className="font-bold uppercase text-[10px]"><RefreshCw className="h-3 w-3 mr-1" /> AI Sync</TabsTrigger>
@@ -1028,6 +1089,88 @@ export function Admin() {
                 </tbody>
               </table>
             </div>
+          </TabsContent>
+
+          {/* Gallery Management */}
+          <TabsContent value="gallery" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-[#1a3a5a]">Image Gallery</h2>
+            </div>
+
+            <Card className="border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-sm uppercase">Upload New Image</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleUploadImage} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="image-upload">Select Image</Label>
+                      <Input 
+                        id="image-upload" 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={e => setSelectedFile(e.target.files?.[0] || null)} 
+                        required 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Alt Text</Label>
+                      <Input 
+                        placeholder="Image accessibility description" 
+                        value={imageForm.altText} 
+                        onChange={e => setImageForm({...imageForm, altText: e.target.value})} 
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Description</Label>
+                    <Textarea 
+                      placeholder="Brief notes about this image" 
+                      value={imageForm.description} 
+                      onChange={e => setImageForm({...imageForm, description: e.target.value})} 
+                    />
+                  </div>
+                  <Button type="submit" size="sm" disabled={isUploading}>
+                    {isUploading ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+                    Upload Image
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {galleryImages.map(img => (
+                <Card key={img.id} className="overflow-hidden group">
+                  <div className="aspect-square bg-muted/30 relative">
+                    <img 
+                      src={img.url} 
+                      alt={img.altText} 
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <Button size="icon" variant="secondary" onClick={() => copyToClipboard(img.url)} title="Copy Link">
+                        {copyStatus === img.url ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                      <Button size="icon" variant="destructive" onClick={() => handleDeleteImage(img.id)} title="Delete Image">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="p-2 text-[10px] space-y-1">
+                    <p className="font-bold truncate" title={img.fileName}>{img.fileName}</p>
+                    <p className="text-muted-foreground truncate">{img.description || 'No description'}</p>
+                  </div>
+                </Card>
+              ))}
+            </div>
+            {galleryImages.length === 0 && (
+              <div className="text-center py-12 bg-white border rounded-lg">
+                <ImageIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-20" />
+                <p className="text-muted-foreground">No images in gallery yet.</p>
+              </div>
+            )}
           </TabsContent>
 
           {/* Price Ranges Management */}

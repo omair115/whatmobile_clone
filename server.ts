@@ -10,6 +10,8 @@ import { GoogleGenAI, Type } from "@google/genai";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+import multer from 'multer';
+
 // Initialize Gemini AI (Server-side only)
 const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
@@ -60,6 +62,77 @@ async function startServer() {
   // Diagnostic Route
   app.get("/api/test-brands", (req, res) => {
     res.json({ message: "Brands API section is loaded" });
+  });
+
+  // IMAGE GALLERY MANAGEMENT
+  const upload = multer({ 
+    storage: multer.memoryStorage(), 
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  });
+
+  app.post("/api/images", upload.single('image'), async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "No image provided" });
+    const { description, altText } = req.body;
+    const id = uuidv4();
+    try {
+      const result = await pool.query(
+        'INSERT INTO gallery_images (id, file_name, mime_type, size, data, description, alt_text) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+        [id, req.file.originalname, req.file.mimetype, req.file.size, req.file.buffer, description, altText]
+      );
+      const saved = result.rows[0];
+      res.status(201).json({
+        id: saved.id,
+        url: `/api/images/raw/${saved.id}`,
+        fileName: saved.file_name,
+        mimeType: saved.mime_type,
+        size: saved.size,
+        description: saved.description,
+        altText: saved.alt_text,
+        created_at: saved.created_at
+      });
+    } catch (err: any) {
+      console.error("Image upload error:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/images", async (req, res) => {
+    try {
+      const result = await pool.query('SELECT id, file_name, mime_type, size, description, alt_text, created_at FROM gallery_images ORDER BY created_at DESC');
+      res.json(result.rows.map((r: any) => ({
+        id: r.id,
+        url: `/api/images/raw/${r.id}`,
+        fileName: r.file_name,
+        mimeType: r.mime_type,
+        size: r.size,
+        description: r.description,
+        altText: r.alt_text,
+        created_at: r.created_at
+      })));
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.get("/api/images/raw/:id", async (req, res) => {
+    try {
+      const result = await pool.query('SELECT data, mime_type FROM gallery_images WHERE id = $1', [req.params.id]);
+      if (result.rows.length === 0) return res.status(404).send("Not found");
+      const image = result.rows[0];
+      res.set("Content-Type", image.mime_type);
+      res.send(image.data);
+    } catch (err: any) {
+      res.status(500).send(err.message);
+    }
+  });
+
+  app.delete("/api/images/:id", async (req, res) => {
+    try {
+      await pool.query('DELETE FROM gallery_images WHERE id = $1', [req.params.id]);
+      res.json({ message: "Image deleted" });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
   });
 
   // BRAND MANAGEMENT
