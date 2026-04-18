@@ -106,17 +106,18 @@ export function PhoneDetail() {
       />
 
       <div className="container mx-auto px-4 py-6">
+        {/* Breadcrumbs */}
+        <nav className="flex items-center gap-2 text-[10px] font-bold text-[#1a3a5a] mb-6 uppercase">
+          <a href="/" className="hover:underline">Mobile Prices</a>
+          <span>{">"}</span>
+          <a href={`/brand/${phone.brand.toLowerCase()}`} className="hover:underline">{phone.brand} Mobiles</a>
+          <span>{">"}</span>
+          <span className="text-muted-foreground">{phone.name} Price in Pakistan</span>
+        </nav>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Main Content */}
-          <div className="lg:col-span-8 space-y-6">
-            {/* Breadcrumbs */}
-            <nav className="flex items-center gap-2 text-[10px] font-bold text-[#1a3a5a] mb-4 uppercase">
-              <a href="/" className="hover:underline">Mobile Prices</a>
-              <span>{">"}</span>
-              <a href={`/brand/${phone.brand.toLowerCase()}`} className="hover:underline">{phone.brand} Mobiles</a>
-              <span>{">"}</span>
-              <span className="text-muted-foreground">{phone.name} Price in Pakistan</span>
-            </nav>
+          <div className="lg:col-span-9 space-y-6">
 
             {/* Product Header Section */}
             <div className="bg-white border rounded-lg shadow-sm overflow-hidden p-6">
@@ -462,8 +463,8 @@ export function PhoneDetail() {
           </div>
 
           {/* Sidebar */}
-          <div className="lg:col-span-4">
-            <div className="sticky top-24">
+          <div className="lg:col-span-3">
+            <div className="">
               <Sidebar showPriceFilters={showFilters} showFeatureFilters={showFilters} />
             </div>
           </div>

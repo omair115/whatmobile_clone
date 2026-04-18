@@ -539,8 +539,12 @@ async function startServer() {
   // Similarity and brand-related endpoints
   app.get("/api/mobiles/:slug/similar", async (req, res) => {
     try {
-      const { slug } = req.params;
-      const phoneRes = await pool.query('SELECT * FROM mobiles WHERE LOWER(slug) = LOWER($1)', [slug]);
+      const rawSlug = req.params.slug;
+      const cleanSlug = slugify(rawSlug);
+      const phoneRes = await pool.query(
+        'SELECT * FROM mobiles WHERE LOWER(slug) = LOWER($1) OR LOWER(slug) = LOWER($2) LIMIT 1', 
+        [rawSlug, cleanSlug]
+      );
       if (phoneRes.rows.length === 0) return res.status(404).json({ error: "Mobile not found" });
       
       const phone = phoneRes.rows[0];
@@ -581,12 +585,17 @@ async function startServer() {
 
   app.get("/api/mobiles/:slug/brand-related", async (req, res) => {
     try {
-      const { slug } = req.params;
-      const phoneRes = await pool.query('SELECT brand FROM mobiles WHERE LOWER(slug) = LOWER($1)', [slug]);
+      const rawSlug = req.params.slug;
+      const cleanSlug = slugify(rawSlug);
+      const phoneRes = await pool.query(
+        'SELECT brand FROM mobiles WHERE LOWER(slug) = LOWER($1) OR LOWER(slug) = LOWER($2) LIMIT 1', 
+        [rawSlug, cleanSlug]
+      );
       if (phoneRes.rows.length === 0) return res.status(404).json({ error: "Mobile not found" });
       
       const brand = phoneRes.rows[0].brand;
-      const result = await pool.query('SELECT * FROM mobiles WHERE brand = $1 AND LOWER(slug) != LOWER($2) LIMIT 6', [brand, slug]);
+      const actualSlug = phoneRes.rows[0].slug; // Get the canonical slug from DB
+      const result = await pool.query('SELECT * FROM mobiles WHERE brand = $1 AND LOWER(slug) != LOWER($2) LIMIT 6', [brand, actualSlug]);
       res.json(result.rows);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
