@@ -54,6 +54,9 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  // Trust proxy for ngrok and load balancers
+  app.set('trust proxy', 1);
+
   // Run migrations
   await fixExistingSlugs();
 
@@ -82,15 +85,26 @@ async function startServer() {
 
   // Google OAuth Routes
   const getRedirectUri = (req: any) => {
-    let baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
-    // Force https for production-like environments if not specified
-    if (!process.env.APP_URL && (baseUrl.includes('ngrok') || baseUrl.includes('run.app'))) {
+    // 1. Priority: Environment Variable
+    if (process.env.APP_URL) {
+      const baseUrl = process.env.APP_URL.replace(/\/+$/, '');
+      return `${baseUrl}/auth/google/callback`;
+    }
+
+    // 2. Detection: Use headers (especially for ngrok/proxies)
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const host = req.headers['x-forwarded-host'] || req.get('host');
+    
+    let baseUrl = `${protocol}://${host}`;
+    
+    // Force https for ngrok/run.app if detection failed
+    if (baseUrl.includes('ngrok') || baseUrl.includes('run.app')) {
       baseUrl = baseUrl.replace('http://', 'https://');
     }
-    // Remove trailing slash if present
+
     baseUrl = baseUrl.replace(/\/+$/, '');
     const uri = `${baseUrl}/auth/google/callback`;
-    console.log(`[OAuth] Generated Redirect URI: ${uri}`);
+    console.log(`[OAuth] Generated Redirect URI (Detected): ${uri}`);
     return uri;
   };
 
