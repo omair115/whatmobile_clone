@@ -133,30 +133,6 @@ export function Home() {
               </div>
             </div>
 
-            {/* Latest News Section */}
-            <section className="bg-white rounded-lg border shadow-sm overflow-hidden">
-              <div className="bg-[#f8f9fa] border-b px-4 py-2">
-                <h2 className="text-sm font-bold text-[#1a3a5a] uppercase tracking-tight">Latest News</h2>
-              </div>
-              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {posts.map(post => (
-                  <a key={post.id} href={`/blog/${post.slug}`} className="group block border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-                    <div className="aspect-video relative overflow-hidden">
-                      <img src={post.image} alt={post.title} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
-                    </div>
-                    <div className="p-3">
-                      <h3 className="text-xs font-bold line-clamp-2 leading-tight group-hover:text-primary transition-colors">{post.title}</h3>
-                    </div>
-                  </a>
-                ))}
-                {posts.length === 0 && (
-                  <div className="col-span-full py-8 text-center text-muted-foreground text-xs italic">
-                    No latest news available.
-                  </div>
-                )}
-              </div>
-            </section>
-
             {/* Latest Mobile Phones Section */}
             <section className="bg-white rounded-lg border shadow-sm overflow-hidden">
               <div className="bg-[#f8f9fa] border-b px-4 py-2 flex justify-between items-center">
@@ -242,25 +218,6 @@ export function Home() {
               </div>
             </section>
 
-            {/* Coming Soon Section */}
-            <section className="bg-white rounded-lg border shadow-sm overflow-hidden">
-              <div className="bg-[#f8f9fa] border-b px-4 py-2">
-                <h2 className="text-sm font-bold text-[#1a3a5a] uppercase tracking-tight">Coming Soon Mobiles Prices in Pakistan</h2>
-              </div>
-              <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {comingSoon.map(phone => (
-                  <div key={phone.id} className="flex flex-col items-center text-center">
-                    <div className="aspect-[3/4] w-24 relative mb-2">
-                      <img src={phone.images[0]} alt={phone.name} className="object-contain w-full h-full" referrerPolicy="no-referrer" />
-                    </div>
-                    <h3 className="text-[10px] font-bold leading-tight mb-1">{phone.name}</h3>
-                    <p className="text-[9px] text-muted-foreground uppercase font-bold">Expected Price</p>
-                    <p className="text-[10px] font-bold text-[#d32f2f]">Rs. {parseInt(phone.price.toString().replace(/,/g, '')) * 210}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-
             {/* Price Row 4: 20k - 30k */}
             <section className="bg-white rounded-lg border shadow-sm overflow-hidden">
               <div className="bg-[#f8f9fa] border-b px-4 py-2 flex justify-between items-center">
@@ -284,6 +241,49 @@ export function Home() {
                 {pkrUnder10k.slice(0, 6).map(phone => (
                   <PhoneCard key={phone.id} phone={phone} />
                 ))}
+              </div>
+            </section>
+
+            {/* Coming Soon Section */}
+            <section className="bg-white rounded-lg border shadow-sm overflow-hidden">
+              <div className="bg-[#f8f9fa] border-b px-4 py-2">
+                <h2 className="text-sm font-bold text-[#1a3a5a] uppercase tracking-tight">Coming Soon Mobiles Prices in Pakistan</h2>
+              </div>
+              <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {comingSoon.map(phone => (
+                  <div key={phone.id} className="flex flex-col items-center text-center">
+                    <div className="aspect-[3/4] w-24 relative mb-2">
+                      <img src={phone.images[0]} alt={phone.name} className="object-contain w-full h-full" referrerPolicy="no-referrer" />
+                    </div>
+                    <h3 className="text-[10px] font-bold leading-tight mb-1">{phone.name}</h3>
+                    <p className="text-[9px] text-muted-foreground uppercase font-bold">Expected Price</p>
+                    <p className="text-[10px] font-bold text-[#d32f2f]">Rs. {parseInt(phone.price.toString().replace(/,/g, '')) * 210}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Latest News Section */}
+            <section className="bg-white rounded-lg border shadow-sm overflow-hidden">
+              <div className="bg-[#f8f9fa] border-b px-4 py-2">
+                <h2 className="text-sm font-bold text-[#1a3a5a] uppercase tracking-tight">Latest News</h2>
+              </div>
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {posts.map(post => (
+                  <a key={post.id} href={`/blog/${post.slug}`} className="group block border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                    <div className="aspect-video relative overflow-hidden">
+                      <img src={post.image} alt={post.title} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
+                    </div>
+                    <div className="p-3">
+                      <h3 className="text-xs font-bold line-clamp-2 leading-tight group-hover:text-primary transition-colors">{post.title}</h3>
+                    </div>
+                  </a>
+                ))}
+                {posts.length === 0 && (
+                  <div className="col-span-full py-8 text-center text-muted-foreground text-xs italic">
+                    No latest news available.
+                  </div>
+                )}
               </div>
             </section>
 
