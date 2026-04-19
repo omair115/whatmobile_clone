@@ -12,6 +12,91 @@ interface CommentSectionProps {
   currentUser: User | null;
 }
 
+interface CommentItemProps {
+  comment: Comment;
+  depth?: number;
+  replyingTo: string | null;
+  setReplyingTo: (id: string | null) => void;
+  replyContent: string;
+  setReplyContent: (content: string) => void;
+  handleSubmit: (parentId?: string) => void;
+  isSubmitting: boolean;
+}
+
+const CommentItem = ({ 
+  comment, 
+  depth = 0, 
+  replyingTo, 
+  setReplyingTo, 
+  replyContent, 
+  setReplyContent, 
+  handleSubmit, 
+  isSubmitting 
+}: CommentItemProps) => (
+  <div className={cn("space-y-4", depth > 0 ? "ml-8 mt-4 border-l pl-4" : "mt-6")}>
+    <div className="flex space-x-3">
+      <Avatar className="h-8 w-8">
+        <AvatarImage src={comment.user?.avatar} />
+        <AvatarFallback>{comment.user?.name?.charAt(0) || '?'}</AvatarFallback>
+      </Avatar>
+      <div className="flex-1 space-y-1">
+        <div className="flex items-center justify-between">
+          <h4 className="text-xs font-bold text-[#1a3a5a]">{comment.user?.name}</h4>
+          <span className="text-[10px] text-muted-foreground italic">
+            {comment.created_at ? formatDistanceToNow(new Date(comment.created_at)) : ''} ago
+          </span>
+        </div>
+        <p className="text-sm text-gray-700 leading-relaxed">{comment.content}</p>
+        <div className="pt-1">
+          <button 
+            onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+            className="text-[10px] font-bold text-[#d32f2f] hover:underline flex items-center"
+          >
+            <Reply className="h-3 w-3 mr-1" />
+            Reply
+          </button>
+        </div>
+        
+        {replyingTo === comment.id && (
+          <div className="mt-3 space-y-2">
+            <Textarea 
+              placeholder="Write a reply..."
+              value={replyContent}
+              onChange={(e) => setReplyContent(e.target.value)}
+              className="text-sm min-h-[80px]"
+              autoFocus
+            />
+            <div className="flex justify-end space-x-2">
+              <Button size="sm" variant="ghost" onClick={() => setReplyingTo(null)}>Cancel</Button>
+              <Button size="sm" onClick={() => handleSubmit(comment.id)} disabled={isSubmitting}>
+                Post Reply
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+    
+    {comment.replies && comment.replies.length > 0 && (
+      <div className="space-y-4">
+        {comment.replies.map(reply => (
+          <CommentItem 
+            key={reply.id} 
+            comment={reply} 
+            depth={depth + 1}
+            replyingTo={replyingTo}
+            setReplyingTo={setReplyingTo}
+            replyContent={replyContent}
+            setReplyContent={setReplyContent}
+            handleSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        ))}
+      </div>
+    )}
+  </div>
+);
+
 export function CommentSection({ mobileId, currentUser }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -75,60 +160,6 @@ export function CommentSection({ mobileId, currentUser }: CommentSectionProps) {
     }
   };
 
-  const CommentItem = ({ comment, depth = 0 }: { comment: Comment, depth?: number }) => (
-    <div className={cn("space-y-4", depth > 0 ? "ml-8 mt-4 border-l pl-4" : "mt-6")}>
-      <div className="flex space-x-3">
-        <Avatar className="h-8 w-8">
-          <AvatarImage src={comment.user?.avatar} />
-          <AvatarFallback>{comment.user?.name?.charAt(0) || '?'}</AvatarFallback>
-        </Avatar>
-        <div className="flex-1 space-y-1">
-          <div className="flex items-center justify-between">
-            <h4 className="text-xs font-bold text-[#1a3a5a]">{comment.user?.name}</h4>
-            <span className="text-[10px] text-muted-foreground italic">
-              {formatDistanceToNow(new Date(comment.created_at))} ago
-            </span>
-          </div>
-          <p className="text-sm text-gray-700 leading-relaxed">{comment.content}</p>
-          <div className="pt-1">
-            <button 
-              onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-              className="text-[10px] font-bold text-[#d32f2f] hover:underline flex items-center"
-            >
-              <Reply className="h-3 w-3 mr-1" />
-              Reply
-            </button>
-          </div>
-          
-          {replyingTo === comment.id && (
-            <div className="mt-3 space-y-2">
-              <Textarea 
-                placeholder="Write a reply..."
-                value={replyContent}
-                onChange={(e) => setReplyContent(e.target.value)}
-                className="text-sm min-h-[80px]"
-              />
-              <div className="flex justify-end space-x-2">
-                <Button size="sm" variant="ghost" onClick={() => setReplyingTo(null)}>Cancel</Button>
-                <Button size="sm" onClick={() => handleSubmit(comment.id)} disabled={isSubmitting}>
-                  Post Reply
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-      
-      {comment.replies && comment.replies.length > 0 && (
-        <div className="space-y-4">
-          {comment.replies.map(reply => (
-            <CommentItem key={reply.id} comment={reply} depth={depth + 1} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between border-b pb-4">
@@ -169,9 +200,18 @@ export function CommentSection({ mobileId, currentUser }: CommentSectionProps) {
             No comments yet. Be the first to start the discussion!
           </div>
         ) : (
-          <div className="divide-y divide-gray-100 italic">
+          <div className="divide-y divide-gray-100">
             {comments.map(comment => (
-              <CommentItem key={comment.id} comment={comment} />
+              <CommentItem 
+                key={comment.id} 
+                comment={comment}
+                replyingTo={replyingTo}
+                setReplyingTo={setReplyingTo}
+                replyContent={replyContent}
+                setReplyContent={setReplyContent}
+                handleSubmit={handleSubmit}
+                isSubmitting={isSubmitting}
+              />
             ))}
           </div>
         )}
