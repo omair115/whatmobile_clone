@@ -35,167 +35,222 @@ const initDb = async () => {
   try {
     const client = await pool.connect();
     try {
-      await client.query(`
-        -- ... existing CREATE TABLE statements ...
-        CREATE TABLE IF NOT EXISTS mobiles (
-          id UUID PRIMARY KEY,
-          name TEXT NOT NULL,
-          brand TEXT NOT NULL,
-          slug TEXT UNIQUE NOT NULL,
-          price TEXT,
-          currency TEXT,
-          launch_date TEXT,
-          images JSONB,
-          specs JSONB,
-          description TEXT,
-          seo_title TEXT,
-          seo_description TEXT,
-          category TEXT,
-          features JSONB,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE TABLE IF NOT EXISTS posts (
-          id UUID PRIMARY KEY,
-          title TEXT NOT NULL,
-          slug TEXT UNIQUE NOT NULL,
-          content TEXT,
-          author TEXT,
-          image TEXT,
-          tags JSONB,
-          seo_title TEXT,
-          seo_description TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE TABLE IF NOT EXISTS brands (
-          id UUID PRIMARY KEY,
-          name TEXT UNIQUE NOT NULL,
-          slug TEXT UNIQUE NOT NULL,
-          logo TEXT,
-          description TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS price_ranges (
-          id UUID PRIMARY KEY,
-          label TEXT NOT NULL,
-          min_price INTEGER NOT NULL,
-          max_price INTEGER NOT NULL,
-          currency TEXT DEFAULT 'Rs.'
-        );
-
-        CREATE TABLE IF NOT EXISTS networks (
-          id UUID PRIMARY KEY,
-          name TEXT UNIQUE NOT NULL,
-          slug TEXT UNIQUE NOT NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS ram_options (
-          id UUID PRIMARY KEY,
-          label TEXT UNIQUE NOT NULL,
-          slug TEXT UNIQUE NOT NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS screen_sizes (
-          id UUID PRIMARY KEY,
-          label TEXT UNIQUE NOT NULL,
-          slug TEXT UNIQUE NOT NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS mobile_features (
-          id UUID PRIMARY KEY,
-          label TEXT UNIQUE NOT NULL,
-          slug TEXT UNIQUE NOT NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS os_options (
-          id UUID PRIMARY KEY,
-          name TEXT UNIQUE NOT NULL,
-          slug TEXT UNIQUE NOT NULL
-        );
-
-        -- Migration: Add slug column to brands if missing
-        DO $$ 
-        BEGIN 
-            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='brands' AND column_name='slug') THEN
-                ALTER TABLE brands ADD COLUMN slug TEXT;
-                UPDATE brands SET slug = LOWER(REPLACE(name, ' ', '-')) WHERE slug IS NULL;
-                ALTER TABLE brands ALTER COLUMN slug SET NOT NULL;
-                ALTER TABLE brands ADD CONSTRAINT brands_slug_key UNIQUE (slug);
-            END IF;
-        END $$;
-
-        -- Migration: Add new filter columns to mobiles
-        DO $$ 
-        BEGIN 
-            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='mobiles' AND column_name='network') THEN
-                ALTER TABLE mobiles ADD COLUMN network TEXT;
-            END IF;
-            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='mobiles' AND column_name='ram') THEN
-                ALTER TABLE mobiles ADD COLUMN ram TEXT;
-            END IF;
-            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='mobiles' AND column_name='screen_size') THEN
-                ALTER TABLE mobiles ADD COLUMN screen_size TEXT;
-            END IF;
-            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='mobiles' AND column_name='os') THEN
-                ALTER TABLE mobiles ADD COLUMN os TEXT;
-            END IF;
-            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='mobiles' AND column_name='coming_soon') THEN
-                ALTER TABLE mobiles ADD COLUMN coming_soon BOOLEAN DEFAULT FALSE;
-            END IF;
-        END $$;
-
-        -- Migration: Add brand columns to posts
-        DO $$ 
-        BEGIN 
-            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='brand') THEN
-                ALTER TABLE posts ADD COLUMN brand TEXT;
-            END IF;
-            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='brand_id') THEN
-                ALTER TABLE posts ADD COLUMN brand_id TEXT;
-            END IF;
-        END $$;
-
-        -- Gallery Images Table
-        CREATE TABLE IF NOT EXISTS gallery_images (
-          id UUID PRIMARY KEY,
-          file_name TEXT NOT NULL,
-          mime_type TEXT NOT NULL,
-          size INTEGER NOT NULL,
-          data BYTEA NOT NULL,
-          description TEXT,
-          alt_text TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-
-        -- Create users, comments, and ratings tables
-        CREATE TABLE IF NOT EXISTS users (
+      console.log("Starting database initialization...");
+      
+      const tableQueries = [
+        {
+          name: 'mobiles',
+          query: `CREATE TABLE IF NOT EXISTS mobiles (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            brand TEXT NOT NULL,
+            slug TEXT UNIQUE NOT NULL,
+            price TEXT,
+            currency TEXT,
+            launch_date TEXT,
+            images JSONB,
+            specs JSONB,
+            description TEXT,
+            seo_title TEXT,
+            seo_description TEXT,
+            category TEXT,
+            features JSONB,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )`
+        },
+        {
+          name: 'posts',
+          query: `CREATE TABLE IF NOT EXISTS posts (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            slug TEXT UNIQUE NOT NULL,
+            content TEXT,
+            author TEXT,
+            image TEXT,
+            tags JSONB,
+            seo_title TEXT,
+            seo_description TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )`
+        },
+        {
+          name: 'brands',
+          query: `CREATE TABLE IF NOT EXISTS brands (
+            id TEXT PRIMARY KEY,
+            name TEXT UNIQUE NOT NULL,
+            slug TEXT UNIQUE NOT NULL,
+            logo TEXT,
+            description TEXT
+          )`
+        },
+        {
+          name: 'price_ranges',
+          query: `CREATE TABLE IF NOT EXISTS price_ranges (
+            id TEXT PRIMARY KEY,
+            label TEXT NOT NULL,
+            min_price INTEGER NOT NULL,
+            max_price INTEGER NOT NULL,
+            currency TEXT DEFAULT 'Rs.'
+          )`
+        },
+        {
+          name: 'networks',
+          query: `CREATE TABLE IF NOT EXISTS networks (
+            id TEXT PRIMARY KEY,
+            name TEXT UNIQUE NOT NULL,
+            slug TEXT UNIQUE NOT NULL
+          )`
+        },
+        {
+          name: 'ram_options',
+          query: `CREATE TABLE IF NOT EXISTS ram_options (
+            id TEXT PRIMARY KEY,
+            label TEXT UNIQUE NOT NULL,
+            slug TEXT UNIQUE NOT NULL
+          )`
+        },
+        {
+          name: 'screen_sizes',
+          query: `CREATE TABLE IF NOT EXISTS screen_sizes (
+            id TEXT PRIMARY KEY,
+            label TEXT UNIQUE NOT NULL,
+            slug TEXT UNIQUE NOT NULL
+          )`
+        },
+        {
+          name: 'mobile_features',
+          query: `CREATE TABLE IF NOT EXISTS mobile_features (
+            id TEXT PRIMARY KEY,
+            label TEXT UNIQUE NOT NULL,
+            slug TEXT UNIQUE NOT NULL
+          )`
+        },
+        {
+          name: 'os_options',
+          query: `CREATE TABLE IF NOT EXISTS os_options (
+            id TEXT PRIMARY KEY,
+            name TEXT UNIQUE NOT NULL,
+            slug TEXT UNIQUE NOT NULL
+          )`
+        },
+        {
+          name: 'gallery_images',
+          query: `CREATE TABLE IF NOT EXISTS gallery_images (
+            id TEXT PRIMARY KEY,
+            file_name TEXT NOT NULL,
+            mime_type TEXT NOT NULL,
+            size INTEGER NOT NULL,
+            data BYTEA NOT NULL,
+            description TEXT,
+            alt_text TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )`
+        },
+        {
+          name: 'users',
+          query: `CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY,
             google_id TEXT UNIQUE,
             email TEXT UNIQUE,
             name TEXT,
             avatar TEXT,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE TABLE IF NOT EXISTS comments (
+          )`
+        },
+        {
+          name: 'comments',
+          query: `CREATE TABLE IF NOT EXISTS comments (
             id TEXT PRIMARY KEY,
             mobile_id TEXT REFERENCES mobiles(id) ON DELETE CASCADE,
             user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
             content TEXT NOT NULL,
             parent_id TEXT REFERENCES comments(id) ON DELETE CASCADE,
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE TABLE IF NOT EXISTS ratings (
+          )`
+        },
+        {
+          name: 'ratings',
+          query: `CREATE TABLE IF NOT EXISTS ratings (
             id TEXT PRIMARY KEY,
             mobile_id TEXT REFERENCES mobiles(id) ON DELETE CASCADE,
             user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
             rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(mobile_id, user_id)
-        );
-      `);
+          )`
+        }
+      ];
+
+      for (const t of tableQueries) {
+        try {
+          await client.query(t.query);
+          console.log(`✅ Table checked/created: ${t.name}`);
+        } catch (e) {
+          console.error(`❌ Error creating table ${t.name}:`, e);
+        }
+      }
+
+      // Migrations
+      console.log("Running migrations...");
+      
+      const migrationQueries = [
+        {
+          name: 'brands slug migration',
+          query: `DO $$ 
+            BEGIN 
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='brands' AND column_name='slug') THEN
+                    ALTER TABLE brands ADD COLUMN slug TEXT;
+                    UPDATE brands SET slug = LOWER(REPLACE(name, ' ', '-')) WHERE slug IS NULL;
+                    ALTER TABLE brands ALTER COLUMN slug SET NOT NULL;
+                    ALTER TABLE brands ADD CONSTRAINT brands_slug_key UNIQUE (slug);
+                END IF;
+            END $$;`
+        },
+        {
+          name: 'mobiles filter columns migration',
+          query: `DO $$ 
+            BEGIN 
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='mobiles' AND column_name='network') THEN
+                    ALTER TABLE mobiles ADD COLUMN network TEXT;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='mobiles' AND column_name='ram') THEN
+                    ALTER TABLE mobiles ADD COLUMN ram TEXT;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='mobiles' AND column_name='screen_size') THEN
+                    ALTER TABLE mobiles ADD COLUMN screen_size TEXT;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='mobiles' AND column_name='os') THEN
+                    ALTER TABLE mobiles ADD COLUMN os TEXT;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='mobiles' AND column_name='coming_soon') THEN
+                    ALTER TABLE mobiles ADD COLUMN coming_soon BOOLEAN DEFAULT FALSE;
+                END IF;
+            END $$;`
+        },
+        {
+          name: 'posts brand columns migration',
+          query: `DO $$ 
+            BEGIN 
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='brand') THEN
+                    ALTER TABLE posts ADD COLUMN brand TEXT;
+                END IF;
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='posts' AND column_name='brand_id') THEN
+                    ALTER TABLE posts ADD COLUMN brand_id TEXT;
+                END IF;
+            END $$;`
+        }
+      ];
+
+      for (const m of migrationQueries) {
+        try {
+          await client.query(m.query);
+          console.log(`✅ Migration completed: ${m.name}`);
+        } catch (e) {
+          console.error(`❌ Error in migration ${m.name}:`, e);
+        }
+      }
+
+      console.log("Database successfully initialized.");
       console.log("PostgreSQL tables initialized");
     } finally {
       client.release();
