@@ -83,9 +83,15 @@ async function startServer() {
   // Google OAuth Routes
   const getRedirectUri = (req: any) => {
     let baseUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+    // Force https for production-like environments if not specified
+    if (!process.env.APP_URL && (baseUrl.includes('ngrok') || baseUrl.includes('run.app'))) {
+      baseUrl = baseUrl.replace('http://', 'https://');
+    }
     // Remove trailing slash if present
     baseUrl = baseUrl.replace(/\/+$/, '');
-    return `${baseUrl}/auth/google/callback`;
+    const uri = `${baseUrl}/auth/google/callback`;
+    console.log(`[OAuth] Generated Redirect URI: ${uri}`);
+    return uri;
   };
 
   app.get('/api/auth/google/url', (req, res) => {
