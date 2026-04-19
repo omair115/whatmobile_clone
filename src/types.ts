@@ -78,6 +78,7 @@ export interface Mobile {
   seoDescription: string;
   category: 'budget' | 'mid-range' | 'flagship';
   features: string[];
+  comingSoon?: boolean;
   created_at: string;
 }
 

@@ -140,6 +140,9 @@ const initDb = async () => {
             IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='mobiles' AND column_name='os') THEN
                 ALTER TABLE mobiles ADD COLUMN os TEXT;
             END IF;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='mobiles' AND column_name='coming_soon') THEN
+                ALTER TABLE mobiles ADD COLUMN coming_soon BOOLEAN DEFAULT FALSE;
+            END IF;
         END $$;
 
         -- Migration: Add brand columns to posts

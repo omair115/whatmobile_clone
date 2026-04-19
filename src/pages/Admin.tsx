@@ -501,6 +501,7 @@ export function Admin() {
                 category: 'mid-range',
                 images: [],
                 features: [],
+                comingSoon: false,
                 specs: {
                   build: { os: '', ui: '', dimensions: '', weight: '', sim: '', colors: '' },
                   frequency: { '2g': '', '3g': '', '4g': '', '5g': '' },
@@ -615,6 +616,16 @@ export function Admin() {
                           <option value="">Select OS</option>
                           {osOptions.map(o => <option key={o.id} value={o.name}>{o.name}</option>)}
                         </select>
+                      </div>
+                      <div className="flex items-center space-x-2 pt-8">
+                        <input 
+                          type="checkbox" 
+                          id="coming-soon"
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 shadow-sm"
+                          checked={editingMobile.comingSoon || false}
+                          onChange={e => setEditingMobile({...editingMobile, comingSoon: e.target.checked})}
+                        />
+                        <Label htmlFor="coming-soon" className="cursor-pointer font-bold text-sm text-[#1a3a5a]">Coming Soon</Label>
                       </div>
                     </div>
 

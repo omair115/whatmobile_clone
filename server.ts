@@ -527,7 +527,7 @@ async function startServer() {
   });
 
   app.get("/api/mobiles", async (req, res) => {
-    const { brand, minPrice, maxPrice, network, ram, screen_size, os, feature, category } = req.query;
+    const { brand, minPrice, maxPrice, network, ram, screen_size, os, feature, category, comingSoon } = req.query;
     try {
       let query = 'SELECT * FROM mobiles';
       const params: any[] = [];
@@ -536,6 +536,12 @@ async function startServer() {
       if (brand) {
         conditions.push(`brand ILIKE $${params.length + 1}`);
         params.push(brand);
+      }
+
+      if (comingSoon === 'true') {
+        conditions.push(`coming_soon = TRUE`);
+      } else if (comingSoon === 'false') {
+        conditions.push(`coming_soon = FALSE`);
       }
 
       if (category) {
@@ -712,17 +718,17 @@ async function startServer() {
   });
 
   app.post("/api/mobiles", async (req, res) => {
-    const { name, brand, slug, price, currency, launchDate, images, specs, description, seoTitle, seoDescription, category, features, network, ram, screen_size, os } = req.body;
+    const { name, brand, slug, price, currency, launchDate, images, specs, description, seoTitle, seoDescription, category, features, network, ram, screen_size, os, comingSoon } = req.body;
     const id = uuidv4();
     const cleanSlug = slugify(slug || name);
     
     try {
       const query = `
-        INSERT INTO mobiles (id, name, brand, slug, price, currency, launch_date, images, specs, description, seo_title, seo_description, category, features, network, ram, screen_size, os)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+        INSERT INTO mobiles (id, name, brand, slug, price, currency, launch_date, images, specs, description, seo_title, seo_description, category, features, network, ram, screen_size, os, coming_soon)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
         RETURNING id, slug
       `;
-      const values = [id, name, brand, cleanSlug, price, currency, launchDate, JSON.stringify(images), JSON.stringify(specs), description, seoTitle, seoDescription, category, JSON.stringify(features), network, ram, screen_size, os];
+      const values = [id, name, brand, cleanSlug, price, currency, launchDate, JSON.stringify(images), JSON.stringify(specs), description, seoTitle, seoDescription, category, JSON.stringify(features), network, ram, screen_size, os, comingSoon || false];
       const result = await pool.query(query, values);
       res.status(201).json(result.rows[0]);
     } catch (error: any) {
@@ -966,18 +972,19 @@ async function startServer() {
 
   // Mobile Management
   app.put("/api/mobiles/:id", async (req, res) => {
-    const { name, brand, slug, price, currency, launchDate, images, specs, description, seoTitle, seoDescription, category, features, network, ram, screen_size, os } = req.body;
+    const { name, brand, slug, price, currency, launchDate, images, specs, description, seoTitle, seoDescription, category, features, network, ram, screen_size, os, comingSoon } = req.body;
     const cleanSlug = slugify(slug || name);
     try {
       const query = `
         UPDATE mobiles 
         SET name = $1, brand = $2, slug = $3, price = $4, currency = $5, launch_date = $6, 
             images = $7, specs = $8, description = $9, seo_title = $10, seo_description = $11, 
-            category = $12, features = $13, network = $14, ram = $15, screen_size = $16, os = $17
-        WHERE id = $18
+            category = $12, features = $13, network = $14, ram = $15, screen_size = $16, os = $17,
+            coming_soon = $18
+        WHERE id = $19
         RETURNING id, slug
       `;
-      const values = [name, brand, cleanSlug, price, currency, launchDate, JSON.stringify(images), JSON.stringify(specs), description, seoTitle, seoDescription, category, JSON.stringify(features), network, ram, screen_size, os, req.params.id];
+      const values = [name, brand, cleanSlug, price, currency, launchDate, JSON.stringify(images), JSON.stringify(specs), description, seoTitle, seoDescription, category, JSON.stringify(features), network, ram, screen_size, os, comingSoon || false, req.params.id];
       const result = await pool.query(query, values);
       if (result.rows.length === 0) return res.status(404).json({ error: "Mobile not found" });
       res.json(result.rows[0]);
