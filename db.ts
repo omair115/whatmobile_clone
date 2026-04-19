@@ -37,6 +37,24 @@ const initDb = async () => {
     try {
       console.log("Starting database initialization...");
       
+      // Migrations for type standardization
+      console.log("Standardizing ID types to TEXT...");
+      const idConversionTables = ['mobiles', 'posts', 'brands', 'price_ranges', 'networks', 'ram_options', 'screen_sizes', 'mobile_features', 'os_options', 'gallery_images'];
+      for (const table of idConversionTables) {
+        try {
+          await client.query(`
+            DO $$ 
+            BEGIN 
+              IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='${table}' AND column_name='id' AND data_type='uuid') THEN
+                ALTER TABLE ${table} ALTER COLUMN id TYPE TEXT USING id::text;
+              END IF;
+            END $$;
+          `);
+        } catch (e) {
+          console.error(`Error converting ${table}.id to TEXT:`, e);
+        }
+      }
+
       const tableQueries = [
         {
           name: 'mobiles',
